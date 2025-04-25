@@ -1,47 +1,49 @@
 import Dexie, { Table } from 'dexie';
 
 export interface Sku {
-  id?: number;
+  id: number;
   name: string;
+  image: string;
   type: string;
   brand: string;
-  image: string; // 图片本地路径或Base64
   buyDate: string;
-  buyInfo: string;
+  buyPlatform: string;
+  buyPrice: number;
+  sizeInfo: string;
+  extraInfo: string;
 }
 
 export interface VideoMaterial {
-  id?: number;
+  id: number;
   name: string;
   filePath: string; // 本地路径
-  thumbnail: string; // 缩略图Base64或路径
+  thumbnails: string[]; // 视频文件缩略图Base64或路径
+  skuIds: number[]; // 关联服饰
   createdAt: string;
 }
 
 export interface FinalVideo {
-  id?: number;
+  id: number;
   name: string;
   description: string;
-  clothesIds: number[]; // 关联服饰
   materialIds: number[]; // 关联素材
+  videoPath: string; // 最终视频文件路径
   publishStatus: '未发布' | '已发布' | '定时发布';
-  publishInfo?: string;
   publishTime?: string;
-  publishLink?: string;
   createdAt: string;
 }
 
 class VideoManagerDB extends Dexie {
-  clothes!: Table<Sku, number>;
+  skus!: Table<Sku, number>;
   videoMaterials!: Table<VideoMaterial, number>;
   finalVideos!: Table<FinalVideo, number>;
 
   constructor() {
     super('VideoManagerDB');
-    this.version(1).stores({
-      clothes: '++id, name, type, brand',
+    this.version(4).stores({
+      skus: '++id, name, type, brand',
       videoMaterials: '++id, name, filePath',
-      finalVideos: '++id, name, publishStatus',
+      finalVideos: '++id, name, publishStatus, videoPath',
     });
   }
 }

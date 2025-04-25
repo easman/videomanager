@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -10,10 +10,9 @@ function createWindow () {
     width: 1200,
     height: 800,
     webPreferences: {
-      nodeIntegration: false,
+      nodeIntegration: true,
       contextIsolation: true,
-      // 开发环境可以关闭 webSecurity，但生产环境必须开启
-      webSecurity: !isDev
+      preload: path.join(__dirname, 'preload.js')
     }
   });
 
@@ -22,17 +21,11 @@ function createWindow () {
     win.webContents.openDevTools();
   }
 
-  // 加载应用（开发环境加载 Vite 服务，生产环境加载打包后的静态文件）
+  // 加载应用
   if (isDev) {
-    // 开发环境：直接加载 Vite 服务
-    console.log('开发环境：加载 Vite 服务...');
     win.loadURL('http://localhost:5173');
   } else {
-    // 生产环境：加载打包后的 index.html
-    console.log('生产环境：加载静态文件...');
     const indexPath = path.join(__dirname, '../dist/index.html');
-    
-    // 确认文件存在
     if (fs.existsSync(indexPath)) {
       win.loadFile(indexPath);
     } else {
@@ -40,7 +33,21 @@ function createWindow () {
       win.loadFile(path.join(__dirname, 'error.html'));
     }
   }
+
+  return win;
 }
+
+// 处理选择文件夹
+ipcMain.handle('select-folder', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory']
+  });
+  
+  if (!result.canceled) {
+    return result.filePaths[0];
+  }
+  return null;
+});
 
 app.whenReady().then(() => {
   createWindow();
