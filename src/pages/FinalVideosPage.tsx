@@ -43,7 +43,7 @@ const FinalVideosPage: React.FC = () => {
       material.skuIds?.forEach(skuId => relatedSkuIds.add(skuId));
     });
     
-    const relatedSkus = skus.filter(sku => relatedSkuIds.has(sku.id));
+    const relatedSkus = skus.filter(sku => relatedSkuIds.has(sku.id as number));
     setSelectedMaterialSkus(relatedSkus);
   };
 

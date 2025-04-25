@@ -1,7 +1,7 @@
 import Dexie, { Table } from 'dexie';
 
 export interface Sku {
-  id: number;
+  id?: number;
   name: string;
   image: string;
   type: string;
