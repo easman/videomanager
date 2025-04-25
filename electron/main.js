@@ -144,6 +144,33 @@ ipcMain.handle('get-app-images-dir', () => {
   return getImagesDir();
 });
 
+// 清空目录
+ipcMain.handle('clear-directory', async (event, dirPath) => {
+  try {
+    // 确保目录存在
+    if (!fs.existsSync(dirPath)) {
+      return { success: true, message: '目录不存在' };
+    }
+
+    // 读取目录中的所有文件
+    const files = fs.readdirSync(dirPath);
+    
+    // 删除每个文件
+    for (const file of files) {
+      const filePath = path.join(dirPath, file);
+      fs.unlinkSync(filePath);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('清空目录失败:', error);
+    return { 
+      success: false, 
+      message: error.message 
+    };
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
   app.on('activate', function () {

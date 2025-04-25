@@ -2,7 +2,7 @@ import React from 'react';
 import { Layout, Menu } from 'antd';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { SettingOutlined } from '@ant-design/icons';
-import SkuPage from './pages/SkuPage';
+import SkuPage from './pages/sku/SkuPage';
 import VideoMaterialsPage from './pages/VideoMaterialsPage';
 import FinalVideosPage from './pages/FinalVideosPage';
 import SettingsPage from './pages/SettingsPage';

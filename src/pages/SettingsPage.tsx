@@ -10,18 +10,28 @@ const SettingsPage: React.FC = () => {
     confirm({
       title: '确认清空所有数据？',
       icon: <ExclamationCircleOutlined />,
-      content: '此操作将清空所有服饰、视频素材和成品视频数据，且不可恢复。',
+      content: '此操作将清空所有服饰、视频素材、成品视频数据以及图片文件，且不可恢复。',
       okText: '确认清空',
       okType: 'danger',
       cancelText: '取消',
       async onOk() {
         try {
+          // 清空数据库
           await Promise.all([
             db.skus.clear(),
             db.videoMaterials.clear(),
             db.finalVideos.clear(),
           ]);
-          message.success('数据已清空');
+
+          // 清理图片文件
+          const imagesDir = await window.electronAPI.getAppImagesDir();
+          const clearResult = await window.electronAPI.clearDirectory(imagesDir);
+          
+          if (!clearResult.success) {
+            throw new Error(clearResult.message || '清理图片失败');
+          }
+          
+          message.success('所有数据和图片已清空');
         } catch (error) {
           message.error('清空数据失败：' + (error as Error).message);
         }
@@ -40,7 +50,7 @@ const SettingsPage: React.FC = () => {
               清空所有数据
             </Button>
             <span style={{ marginLeft: 8, color: '#999' }}>
-              清空所有服饰、视频素材和成品视频数据
+              清空所有服饰、视频素材、成品视频数据以及图片文件
             </span>
           </div>
           
