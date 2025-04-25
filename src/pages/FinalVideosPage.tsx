@@ -3,7 +3,7 @@ import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Tag, Sp
 import { PlusOutlined, FolderOutlined, SwapOutlined } from '@ant-design/icons';
 import { db, FinalVideo, Sku, VideoMaterial } from '../db';
 import dayjs from 'dayjs';
-import { getFileName, getLastDirectory } from '../utils/path';
+import { getFileName, getLastDirectory, getFileNameWithoutExtension } from '../utils/path';
 import { useForm } from 'antd/es/form/Form';
 
 const { Option } = Select;
@@ -51,12 +51,15 @@ const FinalVideosPage: React.FC = () => {
     try {
       const path = await window.electronAPI.selectFile();
       if (path) {
-        const videoName = getFileName(path);
+        // 使用不带扩展名的文件名
+        const videoNameWithoutExt = getFileNameWithoutExtension(path);
         setVideoPath(path);
+        // 将视频路径设置到表单
+        form.setFieldsValue({ videoPath: path });
         
-        // 如果名称未填写，自动使用视频文件名
+        // 如果名称未填写，自动使用不带扩展名的视频文件名
         if (!form.getFieldValue('name')) {
-          form.setFieldsValue({ name: videoName });
+          form.setFieldsValue({ name: videoNameWithoutExt });
           setUsingVideoName(true);
         }
       }
@@ -67,24 +70,26 @@ const FinalVideosPage: React.FC = () => {
 
   const toggleName = () => {
     const currentName = form.getFieldValue('name');
-    const videoName = getFileName(videoPath);
+    // 使用不带扩展名的文件名
+    const videoNameWithoutExt = getFileNameWithoutExtension(videoPath);
     
     if (usingVideoName) {
       // 切换到自定义名称
       form.setFieldsValue({ name: customName });
       setUsingVideoName(false);
     } else {
-      // 切换到视频文件名
+      // 切换到视频文件名（不带扩展名）
       setCustomName(currentName); // 保存当前的自定义名称
-      form.setFieldsValue({ name: videoName });
+      form.setFieldsValue({ name: videoNameWithoutExt });
       setUsingVideoName(true);
     }
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
-    const videoName = getFileName(videoPath);
-    setUsingVideoName(newName === videoName);
+    // 使用不带扩展名的文件名进行比较
+    const videoNameWithoutExt = getFileNameWithoutExtension(videoPath);
+    setUsingVideoName(newName === videoNameWithoutExt);
     if (!usingVideoName) {
       setCustomName(newName);
     }
@@ -143,7 +148,7 @@ const FinalVideosPage: React.FC = () => {
         materialIds: values.materialIds,
         videoPath: values.videoPath,
         publishStatus: values.publishStatus,
-        publishTime: values.publishTime || undefined,
+        publishTime: values.publishTime ? dayjs(values.publishTime).format('YYYY-MM-DD HH:mm:ss') : undefined,
         extraInfo: values.extraInfo?.trim() || '',
         modifiedTimes: [dayjs().format('YYYY-MM-DD HH:mm:ss')]
       };
@@ -216,16 +221,6 @@ const FinalVideosPage: React.FC = () => {
         </Space>
       )
     },
-    { 
-      title: '视频路径', 
-      dataIndex: 'videoPath', 
-      key: 'videoPath',
-      render: (filePath: string) => (
-        <Tag>
-          {getFileName(filePath)}
-        </Tag>
-      )
-    },
     { title: '发布状态', dataIndex: 'publishStatus', key: 'publishStatus' },
     { 
       title: '发布时间', 
@@ -273,7 +268,7 @@ const FinalVideosPage: React.FC = () => {
         width={800}
       >
         <Form form={form} layout="vertical" onFinish={handleAdd}>
-          <Form.Item label="视频路径" required>
+          <Form.Item name="videoPath" label="视频路径" required>
             <Space.Compact style={{ width: '100%' }}>
               <Input
                 value={videoPath}
