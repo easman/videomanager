@@ -50,11 +50,10 @@ const VideoMaterialsPage: React.FC = () => {
 
     setUploading(true);
     try {
-      const id = await db.videoMaterials.add({
+      await db.videoMaterials.add({
         ...values,
         name: values.name.trim(),
         filePath,
-        thumbnails: [],
         skuIds: values.skuIds || [],
         modifiedTimes: [new Date().toISOString()]
       });
@@ -138,12 +137,6 @@ const VideoMaterialsPage: React.FC = () => {
           })}
         </Space>
       )
-    },
-    { 
-      title: '缩略图', 
-      dataIndex: 'thumbnails', 
-      key: 'thumbnails',
-      render: (thumbnails: string[]) => thumbnails?.length ? '已生成' : '未生成'
     }
   ];
 
@@ -176,6 +169,7 @@ const VideoMaterialsPage: React.FC = () => {
       </Button>
 
       <Table 
+        sticky={true}
         rowKey="id" 
         columns={columns} 
         dataSource={materials} 

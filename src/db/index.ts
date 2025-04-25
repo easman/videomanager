@@ -18,7 +18,6 @@ export interface VideoMaterial {
   id?: number;  // id 在创建时是可选的，Dexie 会自动生成
   name: string;
   filePath: string; // 本地路径
-  thumbnails: string[]; // 视频文件缩略图Base64或路径
   skuIds: number[]; // 关联服饰
   modifiedTimes: string[]; // 修改时间列表，第一个是创建时间
 }

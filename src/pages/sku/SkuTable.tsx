@@ -9,6 +9,7 @@ interface SkuTableProps {
 
 const SkuTable: React.FC<SkuTableProps> = ({ dataSource }) => {
   const columns = [
+    { title: 'ID', dataIndex: 'id', key: 'id' },
     { 
       title: '图片', 
       dataIndex: 'image', 
@@ -70,6 +71,7 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource }) => {
 
   return (
     <Table 
+      sticky={true}
       rowKey="id" 
       columns={columns} 
       dataSource={dataSource} 

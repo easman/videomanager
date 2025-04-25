@@ -165,23 +165,17 @@ const FinalVideosPage: React.FC = () => {
   };
 
   const columns = [
-    { title: '名字', dataIndex: 'name', key: 'name' },
     { 
-      title: '描述', 
-      dataIndex: 'description', 
-      key: 'description',
-      render: (text: string) => {
-        if (!text) return '-';
-        return text.length > 8 ? (
-          <Tooltip title={text}>
-            {text.slice(0, 8)}...
-          </Tooltip>
-        ) : text;
-      }
+      title: '名字', 
+      dataIndex: 'name', 
+      key: 'name',
+      width: 200,
+      ellipsis: true
     },
     { 
       title: '关联服饰', 
       key: 'skus',
+      width: 300,
       render: (_: any, record: FinalVideo) => {
         const materialSkuIds = new Set<number>();
         materials
@@ -191,16 +185,29 @@ const FinalVideosPage: React.FC = () => {
           });
         
         return (
-          <Space wrap>
-            {Array.from(materialSkuIds)
-              .map(id => skus.find(sku => sku.id === id))
-              .filter(Boolean)
-              .map(sku => (
-                <Tag key={sku!.id}>
-                  【{sku!.brand}】{sku!.name}（{sku!.type}）
-                </Tag>
-              ))}
-          </Space>
+          <div style={{ 
+            maxWidth: '100%', 
+            wordWrap: 'break-word',
+            whiteSpace: 'pre-wrap'
+          }}>
+            <Space wrap size={[0, 8]}>
+              {Array.from(materialSkuIds)
+                .map(id => skus.find(sku => sku.id === id))
+                .filter(Boolean)
+                .map(sku => (
+                  <Tag 
+                    key={sku!.id}
+                    style={{ 
+                      maxWidth: '100%',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word'
+                    }}
+                  >
+                    【{sku!.brand}】{sku!.name}（{sku!.type}）
+                  </Tag>
+                ))}
+            </Space>
+          </div>
         );
       }
     },
@@ -208,27 +215,46 @@ const FinalVideosPage: React.FC = () => {
       title: '关联素材', 
       dataIndex: 'materialIds', 
       key: 'materialIds',
+      width: 250,
       render: (ids: number[]) => (
-        <Space wrap>
-          {ids?.map(id => {
-            const material = materials.find(m => m.id === id);
-            return material ? (
-              <Tag key={id}>
-                {getLastDirectory(material.filePath)}
-              </Tag>
-            ) : null;
-          })}
-        </Space>
+        <div style={{ 
+          maxWidth: '100%', 
+          wordWrap: 'break-word',
+          whiteSpace: 'pre-wrap'
+        }}>
+          <Space wrap size={[0, 8]}>
+            {ids?.map(id => {
+              const material = materials.find(m => m.id === id);
+              return material ? (
+                <Tag 
+                  key={id}
+                  style={{ 
+                    maxWidth: '100%',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word'
+                  }}
+                >
+                  {getLastDirectory(material.filePath)}
+                </Tag>
+              ) : null;
+            })}
+          </Space>
+        </div>
       )
     },
-    { title: '发布状态', dataIndex: 'publishStatus', key: 'publishStatus' },
+    { 
+      title: '发布状态', 
+      dataIndex: 'publishStatus', 
+      key: 'publishStatus',
+      width: 120
+    },
     { 
       title: '发布时间', 
       dataIndex: 'publishTime', 
       key: 'publishTime',
+      width: 180,
       render: (time: string | undefined) => time || '-'
-    },
-    { title: '额外信息', dataIndex: 'extraInfo', key: 'extraInfo' },
+    }
   ];
 
   const renderNameLabel = () => {
@@ -258,7 +284,7 @@ const FinalVideosPage: React.FC = () => {
       <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
         添加成品视频
       </Button>
-      <Table rowKey="id" columns={columns} dataSource={finalVideos} style={{ marginTop: 16 }} />
+      <Table sticky={true} rowKey="id" columns={columns} dataSource={finalVideos} style={{ marginTop: 16 }} />
       <Modal
         title="添加成品视频"
         open={isModalVisible}

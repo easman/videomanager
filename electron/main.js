@@ -66,7 +66,7 @@ ipcMain.handle('select-folder', async () => {
 });
 
 // 处理选择视频文件
-ipcMain.handle('select-video', async () => {
+ipcMain.handle('select-file', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
     filters: [
