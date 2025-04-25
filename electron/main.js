@@ -10,7 +10,6 @@ function createWindow () {
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
       // 开发环境可以关闭 webSecurity，但生产环境必须开启

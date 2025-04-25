@@ -2,9 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, DatePicker, Upload, Select, message } from 'antd';
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import { db, Sku } from '../db';
-import dayjs from 'dayjs';
-
-const { Option } = Select;
 
 const ClothesPage: React.FC = () => {
   const [clothes, setClothes] = useState<Sku[]>([]);
