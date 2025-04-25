@@ -49,6 +49,21 @@ ipcMain.handle('select-folder', async () => {
   return null;
 });
 
+// 处理选择视频文件
+ipcMain.handle('select-video', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [
+      { name: '视频文件', extensions: ['mp4', 'mov', 'avi', 'mkv', 'wmv'] }
+    ]
+  });
+  
+  if (!result.canceled) {
+    return result.filePaths[0];
+  }
+  return null;
+});
+
 app.whenReady().then(() => {
   createWindow();
   app.on('activate', function () {

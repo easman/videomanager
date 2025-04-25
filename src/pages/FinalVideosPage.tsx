@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Card, Space } from 'antd';
-import { PlusOutlined, FolderOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Tag, Space, Tooltip } from 'antd';
+import { PlusOutlined, FolderOutlined, SwapOutlined } from '@ant-design/icons';
 import { db, FinalVideo, Sku, VideoMaterial } from '../db';
 import dayjs from 'dayjs';
+import { getFileName, getLastDirectory } from '../utils/path';
+import { useForm } from 'antd/es/form/Form';
 
 const { Option } = Select;
 
@@ -10,11 +12,13 @@ const FinalVideosPage: React.FC = () => {
   const [finalVideos, setFinalVideos] = useState<FinalVideo[]>([]);
   const [skus, setSkus] = useState<Sku[]>([]);
   const [materials, setMaterials] = useState<VideoMaterial[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [form] = Form.useForm();
-  const [uploading, setUploading] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [form] = useForm();
+  const [uploading] = useState(false);
   const [selectedMaterialSkus, setSelectedMaterialSkus] = useState<Sku[]>([]);
   const [videoPath, setVideoPath] = useState('');
+  const [customName, setCustomName] = useState('');
+  const [usingVideoName, setUsingVideoName] = useState(true);
 
   const fetchData = async () => {
     const [allFinalVideos, allSkus, allMaterials] = await Promise.all([
@@ -22,7 +26,7 @@ const FinalVideosPage: React.FC = () => {
       db.skus.toArray(),
       db.videoMaterials.toArray()
     ]);
-    setFinalVideos(allFinalVideos);
+    setFinalVideos(allFinalVideos.filter((video): video is FinalVideo => video.id !== undefined));
     setSkus(allSkus);
     setMaterials(allMaterials);
   };
@@ -33,7 +37,7 @@ const FinalVideosPage: React.FC = () => {
 
   // 当选择素材时，自动获取关联的服饰
   const handleMaterialsChange = (selectedMaterialIds: number[]) => {
-    const selectedMaterials = materials.filter(m => selectedMaterialIds.includes(m.id));
+    const selectedMaterials = materials.filter(m => selectedMaterialIds.includes(m.id as number));
     const relatedSkuIds = new Set<number>();
     selectedMaterials.forEach(material => {
       material.skuIds?.forEach(skuId => relatedSkuIds.add(skuId));
@@ -45,160 +49,261 @@ const FinalVideosPage: React.FC = () => {
 
   const handleVideoPathSelect = async () => {
     try {
-      const path = await window.electronAPI.selectFolder();
+      const path = await window.electronAPI.selectFile();
       if (path) {
+        const videoName = getFileName(path);
         setVideoPath(path);
+        
+        // 如果名称未填写，自动使用视频文件名
+        if (!form.getFieldValue('name')) {
+          form.setFieldsValue({ name: videoName });
+          setUsingVideoName(true);
+        }
       }
     } catch (error) {
-      message.error('选择视频路径失败：' + (error as Error).message);
+      message.error('选择视频文件失败：' + (error as Error).message);
     }
   };
 
-  const handleAdd = async (values: any) => {
-    // 校验发布状态和发布时间
-    if (values.publishStatus === '定时发布' && !values.publishTime) {
-      message.error('定时发布必须设置发布时间');
-      return;
+  const toggleName = () => {
+    const currentName = form.getFieldValue('name');
+    const videoName = getFileName(videoPath);
+    
+    if (usingVideoName) {
+      // 切换到自定义名称
+      form.setFieldsValue({ name: customName });
+      setUsingVideoName(false);
+    } else {
+      // 切换到视频文件名
+      setCustomName(currentName); // 保存当前的自定义名称
+      form.setFieldsValue({ name: videoName });
+      setUsingVideoName(true);
     }
+  };
 
-    if (values.publishStatus === '已发布' && !values.publishLink) {
-      message.error('已发布状态必须填写发布链接');
-      return;
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    const videoName = getFileName(videoPath);
+    setUsingVideoName(newName === videoName);
+    if (!usingVideoName) {
+      setCustomName(newName);
     }
+  };
 
-    if (values.publishTime && dayjs(values.publishTime).isBefore(dayjs())) {
-      message.error('发布时间不能早于当前时间');
-      return;
-    }
+  const resetModal = () => {
+    setIsModalVisible(false);
+    setVideoPath('');
+    setSelectedMaterialSkus([]);
+    setCustomName('');
+    setUsingVideoName(true);
+    form.resetFields();
+  };
 
-    if (!values.materialIds?.length) {
-      message.error('请至少选择一个视频素材');
-      return;
-    }
-
-    if (!videoPath) {
-      message.error('请选择视频路径');
-      return;
-    }
-
-    setUploading(true);
+  const handleDelete = async (id: number) => {
     try {
-      await db.finalVideos.add({
-        ...values,
-        materialIds: values.materialIds,
-        videoPath,
-        publishStatus: values.publishStatus,
-        publishTime: values.publishTime ? values.publishTime.format('YYYY-MM-DD HH:mm') : '',
-        createdAt: new Date().toISOString(),
-      });
-      setModalVisible(false);
-      form.resetFields();
-      setVideoPath('');
-      setSelectedMaterialSkus([]);
+      await db.finalVideos.delete(id);
+      message.success('删除成功');
       fetchData();
-      message.success('添加成功');
     } catch (error) {
-      message.error('添加失败：' + (error as Error).message);
-    } finally {
-      setUploading(false);
+      message.error('删除失败');
+      console.error(error);
+    }
+  };
+
+  interface AddVideoFormValues {
+    name: string;
+    description?: string;
+    materialIds: number[];
+    videoPath: string;
+    publishStatus: '定时发布' | '未发布' | '已发布';
+    publishTime?: string;
+    extraInfo?: string;
+  }
+
+  const handleAdd = async (values: AddVideoFormValues) => {
+    try {
+      if (values.publishStatus === '定时发布' && !values.publishTime) {
+        message.error('请选择发布时间');
+        return;
+      }
+
+      if (!values.materialIds || values.materialIds.length === 0) {
+        message.error('请选择关联素材');
+        return;
+      }
+
+      if (!values.videoPath) {
+        message.error('请选择视频文件');
+        return;
+      }
+
+      const newVideo: Omit<FinalVideo, 'id'> = {
+        name: values.name.trim(),
+        description: values.description?.trim() || '',
+        materialIds: values.materialIds,
+        videoPath: values.videoPath,
+        publishStatus: values.publishStatus,
+        publishTime: values.publishTime || undefined,
+        extraInfo: values.extraInfo?.trim() || '',
+        modifiedTimes: [dayjs().format('YYYY-MM-DD HH:mm:ss')]
+      };
+
+      await db.finalVideos.add(newVideo);
+      message.success('添加成功');
+      setIsModalVisible(false);
+      form.resetFields();
+      fetchData();
+    } catch (error) {
+      message.error('添加失败');
+      console.error(error);
     }
   };
 
   const columns = [
     { title: '名字', dataIndex: 'name', key: 'name' },
-    { title: '描述', dataIndex: 'description', key: 'description' },
+    { 
+      title: '描述', 
+      dataIndex: 'description', 
+      key: 'description',
+      render: (text: string) => {
+        if (!text) return '-';
+        return text.length > 8 ? (
+          <Tooltip title={text}>
+            {text.slice(0, 8)}...
+          </Tooltip>
+        ) : text;
+      }
+    },
     { 
       title: '关联服饰', 
       key: 'skus',
       render: (_: any, record: FinalVideo) => {
         const materialSkuIds = new Set<number>();
         materials
-          .filter(m => record.materialIds.includes(m.id))
+          .filter(m => record.materialIds.includes(m.id as number))
           .forEach(material => {
             material.skuIds?.forEach(skuId => materialSkuIds.add(skuId));
           });
         
-        return Array.from(materialSkuIds)
-          .map(id => skus.find(sku => sku.id === id)?.name)
-          .filter(Boolean)
-          .join(', ') || '-';
+        return (
+          <Space wrap>
+            {Array.from(materialSkuIds)
+              .map(id => skus.find(sku => sku.id === id))
+              .filter(Boolean)
+              .map(sku => (
+                <Tag key={sku!.id}>
+                  【{sku!.brand}】{sku!.name}（{sku!.type}）
+                </Tag>
+              ))}
+          </Space>
+        );
       }
     },
     { 
       title: '关联素材', 
       dataIndex: 'materialIds', 
       key: 'materialIds',
-      render: (ids: number[]) => ids?.map(id => 
-        materials.find(m => m.id === id)?.name
-      ).filter(Boolean).join(', ') || '-'
+      render: (ids: number[]) => (
+        <Space wrap>
+          {ids?.map(id => {
+            const material = materials.find(m => m.id === id);
+            return material ? (
+              <Tag key={id}>
+                {getLastDirectory(material.filePath)}
+              </Tag>
+            ) : null;
+          })}
+        </Space>
+      )
     },
-    { title: '视频路径', dataIndex: 'videoPath', key: 'videoPath' },
+    { 
+      title: '视频路径', 
+      dataIndex: 'videoPath', 
+      key: 'videoPath',
+      render: (filePath: string) => (
+        <Tag>
+          {getFileName(filePath)}
+        </Tag>
+      )
+    },
     { title: '发布状态', dataIndex: 'publishStatus', key: 'publishStatus' },
     { 
       title: '发布时间', 
       dataIndex: 'publishTime', 
       key: 'publishTime',
-      render: (time: string) => time || '-'
+      render: (time: string | undefined) => time || '-'
     },
-    { 
-      title: '发布链接', 
-      dataIndex: 'publishLink', 
-      key: 'publishLink',
-      render: (link: string) => link ? 
-        <a href={link} target="_blank" rel="noopener noreferrer">{link}</a> : '-'
-    },
+    { title: '额外信息', dataIndex: 'extraInfo', key: 'extraInfo' },
   ];
 
-  const renderMaterialCard = (material: VideoMaterial) => {
-    const relatedSkus = skus.filter(sku => material.skuIds?.includes(sku.id));
+  const renderNameLabel = () => {
+    if (!videoPath) return '名字';
+
+    const showSwitch = videoPath;
+
     return (
-      <Card 
-        key={material.id} 
-        size="small" 
-        title={material.name}
-        style={{ marginBottom: 8 }}
-      >
-        <div>路径: {material.filePath}</div>
-        {relatedSkus.length > 0 && (
-          <div>
-            关联服饰: {relatedSkus.map(sku => `${sku.name} (${sku.type})`).join(', ')}
-          </div>
+      <Space>
+        名字
+        {showSwitch && (
+          <Button 
+            type="link" 
+            icon={<SwapOutlined />} 
+            onClick={toggleName}
+            size="small"
+          >
+            {usingVideoName ? '使用自定义名' : '使用视频文件名'}
+          </Button>
         )}
-      </Card>
+      </Space>
     );
   };
 
   return (
     <div>
-      <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalVisible(true)}>
+      <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
         添加成品视频
       </Button>
       <Table rowKey="id" columns={columns} dataSource={finalVideos} style={{ marginTop: 16 }} />
       <Modal
         title="添加成品视频"
-        open={modalVisible}
-        onCancel={() => {
-          setModalVisible(false);
-          setVideoPath('');
-          setSelectedMaterialSkus([]);
-          form.resetFields();
-        }}
+        open={isModalVisible}
+        onCancel={resetModal}
         onOk={() => form.submit()}
         confirmLoading={uploading}
         width={800}
       >
         <Form form={form} layout="vertical" onFinish={handleAdd}>
-          <Form.Item 
-            name="name" 
-            label="名字" 
-            rules={[{ required: true, message: '请输入视频名字' }]}
-          >
-            <Input />
+          <Form.Item label="视频路径" required>
+            <Space.Compact style={{ width: '100%' }}>
+              <Input
+                value={videoPath}
+                placeholder="请选择视频路径"
+                readOnly
+              />
+              <Button icon={<FolderOutlined />} onClick={handleVideoPathSelect} />
+            </Space.Compact>
+          </Form.Item>
+
+          <Form.Item noStyle shouldUpdate>
+            {() => (
+              <Form.Item 
+                name="name" 
+                label={renderNameLabel()} 
+                rules={[{ required: true, message: '请输入视频名字' }]}
+                getValueFromEvent={e => e.target.value.trim()}
+              >
+                <Input 
+                  placeholder="请输入视频名字" 
+                  onChange={handleNameChange}
+                />
+              </Form.Item>
+            )}
           </Form.Item>
 
           <Form.Item 
             name="description" 
             label="描述"
+            getValueFromEvent={e => e.target.value.trim()}
           >
             <Input.TextArea />
           </Form.Item>
@@ -222,45 +327,24 @@ const FinalVideosPage: React.FC = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item label="已选素材详情">
-            <Space direction="vertical" style={{ width: '100%' }}>
-              {form.getFieldValue('materialIds')?.map((id: number) => {
-                const material = materials.find(m => m.id === id);
-                return material ? renderMaterialCard(material) : null;
-              })}
-            </Space>
-          </Form.Item>
-
           {selectedMaterialSkus.length > 0 && (
             <Form.Item label="关联服饰">
-              <div style={{ padding: '8px 12px', background: '#f5f5f5', borderRadius: 6 }}>
-                <Space wrap>
-                  {selectedMaterialSkus.map(sku => (
-                    <span key={sku.id} style={{ 
-                      display: 'inline-block',
-                      padding: '4px 8px',
-                      background: '#fff',
-                      border: '1px solid #d9d9d9',
-                      borderRadius: 4
-                    }}>
-                      {sku.name} ({sku.type} - {sku.brand})
-                    </span>
-                  ))}
-                </Space>
-              </div>
+              <Space wrap style={{ padding: '8px 12px', background: '#f5f5f5', borderRadius: 6 }}>
+                {selectedMaterialSkus.map(sku => (
+                  <Tag key={sku.id}>
+                    【{sku.brand}】{sku.name}（{sku.type}）
+                  </Tag>
+                ))}
+              </Space>
             </Form.Item>
           )}
 
-          <Form.Item label="视频路径" required>
-            <Input.Group compact>
-              <Input
-                style={{ width: 'calc(100% - 32px)' }}
-                value={videoPath}
-                placeholder="请选择视频路径"
-                readOnly
-              />
-              <Button icon={<FolderOutlined />} onClick={handleVideoPathSelect} />
-            </Input.Group>
+          <Form.Item 
+            name="extraInfo" 
+            label="额外信息"
+            getValueFromEvent={e => e.target.value.trim()}
+          >
+            <Input.TextArea />
           </Form.Item>
 
           <Form.Item 
@@ -283,35 +367,18 @@ const FinalVideosPage: React.FC = () => {
           >
             {({ getFieldValue }) => {
               const publishStatus = getFieldValue('publishStatus');
-              return (
-                <>
-                  {publishStatus === '定时发布' && (
-                    <Form.Item 
-                      name="publishTime" 
-                      label="发布时间"
-                      rules={[{ required: true, message: '请选择发布时间' }]}
-                    >
-                      <DatePicker 
-                        showTime 
-                        style={{ width: '100%' }}
-                        disabledDate={current => current && current < dayjs().startOf('day')}
-                      />
-                    </Form.Item>
-                  )}
-
-                  {publishStatus === '已发布' && (
-                    <Form.Item 
-                      name="publishLink" 
-                      label="发布链接"
-                      rules={[
-                        { required: true, message: '请输入发布链接' },
-                        { type: 'url', message: '请输入有效的URL' }
-                      ]}
-                    >
-                      <Input />
-                    </Form.Item>
-                  )}
-                </>
+              return (publishStatus === '定时发布' || publishStatus === '已发布') && (
+                <Form.Item 
+                  name="publishTime" 
+                  label="发布时间"
+                  rules={[{ required: true, message: '请选择发布时间' }]}
+                >
+                  <DatePicker 
+                    showTime 
+                    style={{ width: '100%' }}
+                    disabledDate={current => current && current < dayjs().startOf('day')}
+                  />
+                </Form.Item>
               );
             }}
           </Form.Item>

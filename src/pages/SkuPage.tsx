@@ -35,6 +35,12 @@ const SkuPage: React.FC = () => {
     setUploading(true);
     await db.skus.add({
       ...values,
+      name: values.name.trim(),
+      type: values.type.trim(),
+      brand: values.brand?.trim(),
+      buyPlatform: values.buyPlatform?.trim(),
+      sizeInfo: values.sizeInfo?.trim(),
+      extraInfo: values.extraInfo?.trim(),
       image: imageUrl,
       buyDate: values.buyDate.format('YYYY-MM-DD'),
     });
@@ -82,11 +88,21 @@ const SkuPage: React.FC = () => {
         confirmLoading={uploading}
       >
         <Form form={form} layout="vertical" onFinish={handleAdd}>
-          <Form.Item name="name" label="名字" rules={[{ required: true, message: '请输入服饰名字' }]}>
+          <Form.Item 
+            name="name" 
+            label="名字" 
+            rules={[{ required: true, message: '请输入服饰名字' }]}
+            getValueFromEvent={e => e.target.value.trim()}
+          >
             <Input />
           </Form.Item>
           
-          <Form.Item name="type" label="类型" rules={[{ required: true, message: '请输入类型' }]}>
+          <Form.Item 
+            name="type" 
+            label="类型" 
+            rules={[{ required: true, message: '请输入类型' }]}
+            getValueFromEvent={e => e.target.value.trim()}
+          >
             <AutoComplete
               options={typeOptions}
               placeholder="请输入类型"
@@ -96,7 +112,11 @@ const SkuPage: React.FC = () => {
             />
           </Form.Item>
           
-          <Form.Item name="brand" label="品牌">
+          <Form.Item 
+            name="brand" 
+            label="品牌"
+            getValueFromEvent={e => e.target.value.trim()}
+          >
             <AutoComplete
               options={brandOptions}
               placeholder="请输入品牌"
@@ -110,7 +130,11 @@ const SkuPage: React.FC = () => {
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           
-          <Form.Item name="buyPlatform" label="购入平台">
+          <Form.Item 
+            name="buyPlatform" 
+            label="购入平台"
+            getValueFromEvent={e => e.target.value.trim()}
+          >
             <AutoComplete
               options={platformOptions}
               placeholder="请输入购入平台"
@@ -129,11 +153,19 @@ const SkuPage: React.FC = () => {
             />
           </Form.Item>
           
-          <Form.Item name="sizeInfo" label="尺码信息">
+          <Form.Item 
+            name="sizeInfo" 
+            label="尺码信息"
+            getValueFromEvent={e => e.target.value.trim()}
+          >
             <Input />
           </Form.Item>
           
-          <Form.Item name="extraInfo" label="额外信息">
+          <Form.Item 
+            name="extraInfo" 
+            label="额外信息"
+            getValueFromEvent={e => e.target.value.trim()}
+          >
             <Input.TextArea />
           </Form.Item>
           

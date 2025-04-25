@@ -1,17 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message } from 'antd';
-import { PlusOutlined, FolderOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, message, Tag, Space } from 'antd';
+import { PlusOutlined, FolderOutlined, SwapOutlined } from '@ant-design/icons';
 import { db, VideoMaterial, Sku } from '../db';
+import { getLastDirectory } from '../utils/path';
 
 const { Option } = Select;
+
+interface VideoMaterialFormValues {
+  name: string;
+  skuIds: number[];
+}
 
 const VideoMaterialsPage: React.FC = () => {
   const [materials, setMaterials] = useState<VideoMaterial[]>([]);
   const [skus, setSkus] = useState<Sku[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<VideoMaterialFormValues>();
   const [uploading, setUploading] = useState(false);
   const [filePath, setFilePath] = useState('');
+  const [customName, setCustomName] = useState('');
+  const [usingFolderName, setUsingFolderName] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const fetchData = async () => {
     const [allMaterials, allSkus] = await Promise.all([
@@ -22,11 +34,15 @@ const VideoMaterialsPage: React.FC = () => {
     setSkus(allSkus);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const resetModal = () => {
+    setModalVisible(false);
+    setFilePath('');
+    setCustomName('');
+    setUsingFolderName(true);
+    form.resetFields();
+  };
 
-  const handleAdd = async (values: any) => {
+  const handleAdd = async (values: VideoMaterialFormValues) => {
     if (!filePath) {
       message.error('请选择文件夹路径');
       return;
@@ -34,18 +50,18 @@ const VideoMaterialsPage: React.FC = () => {
 
     setUploading(true);
     try {
-      await db.videoMaterials.add({
+      const id = await db.videoMaterials.add({
         ...values,
+        name: values.name.trim(),
         filePath,
         thumbnails: [],
         skuIds: values.skuIds || [],
-        createdAt: new Date().toISOString(),
+        modifiedTimes: [new Date().toISOString()]
       });
-      setModalVisible(false);
-      form.resetFields();
-      setFilePath('');
-      fetchData();
+      
       message.success('添加成功');
+      resetModal();
+      fetchData();
     } catch (error) {
       message.error('添加失败：' + (error as Error).message);
     } finally {
@@ -57,47 +73,157 @@ const VideoMaterialsPage: React.FC = () => {
     try {
       const path = await window.electronAPI.selectFolder();
       if (path) {
+        const folderName = getLastDirectory(path);
         setFilePath(path);
+        
+        // 如果名称未填写，自动使用文件夹名
+        if (!form.getFieldValue('name')) {
+          form.setFieldsValue({ name: folderName });
+          setUsingFolderName(true);
+        }
       }
     } catch (error) {
       message.error('选择文件夹失败：' + (error as Error).message);
     }
   };
 
+  const toggleName = () => {
+    const currentName = form.getFieldValue('name');
+    const folderName = getLastDirectory(filePath);
+    
+    if (usingFolderName) {
+      // 切换到自定义名称
+      form.setFieldsValue({ name: customName});
+      setUsingFolderName(false);
+    } else {
+      // 切换到文件夹名称
+      setCustomName(currentName); // 保存当前的自定义名称
+      form.setFieldsValue({ name: folderName });
+      setUsingFolderName(true);
+    }
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    const folderName = getLastDirectory(filePath);
+    setUsingFolderName(newName === folderName);
+    if (!usingFolderName) {
+      setCustomName(newName);
+    }
+  };
+
   const columns = [
     { title: '名字', dataIndex: 'name', key: 'name' },
-    { title: '文件路径', dataIndex: 'filePath', key: 'filePath' },
+    { 
+      title: '文件夹路径', 
+      dataIndex: 'filePath', 
+      key: 'filePath',
+      render: (filePath: string) => (
+        <Tag>{getLastDirectory(filePath)}</Tag>
+      )
+    },
     { 
       title: '关联服饰', 
       dataIndex: 'skuIds', 
       key: 'skuIds',
-      render: (skuIds: number[]) => skuIds?.map(id => 
-        skus.find(sku => sku.id === id)?.name
-      ).filter(Boolean).join(', ') || '-'
+      render: (skuIds: number[]) => (
+        <Space wrap>
+          {skuIds?.map(id => {
+            const sku = skus.find(s => s.id === id);
+            return sku ? (
+              <Tag key={id}>
+                【{sku.brand}】{sku.name}（{sku.type}）
+              </Tag>
+            ) : null;
+          })}
+        </Space>
+      )
     },
-    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt' },
+    { 
+      title: '缩略图', 
+      dataIndex: 'thumbnails', 
+      key: 'thumbnails',
+      render: (thumbnails: string[]) => thumbnails?.length ? '已生成' : '未生成'
+    }
   ];
+
+  const renderNameLabel = () => {
+    if (!filePath) return '名字';
+
+    const showSwitch = filePath;
+
+    return (
+      <Space>
+        名字
+        {showSwitch && (
+          <Button 
+            type="link" 
+            icon={<SwapOutlined />} 
+            onClick={toggleName}
+            size="small"
+          >
+            {usingFolderName ? '使用自定义名' : '使用文件夹名'}
+          </Button>
+        )}
+      </Space>
+    );
+  };
 
   return (
     <div>
       <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalVisible(true)}>
         添加素材
       </Button>
-      <Table rowKey="id" columns={columns} dataSource={materials} style={{ marginTop: 16 }} />
+
+      <Table 
+        rowKey="id" 
+        columns={columns} 
+        dataSource={materials} 
+        style={{ marginTop: 16 }} 
+      />
+
       <Modal
         title="添加视频素材"
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        onCancel={resetModal}
         onOk={() => form.submit()}
         confirmLoading={uploading}
         width={600}
       >
-        <Form form={form} layout="vertical" onFinish={handleAdd}>
-          <Form.Item name="name" label="名字" rules={[{ required: true, message: '请输入素材名字' }]}>
-            <Input />
+        <Form<VideoMaterialFormValues>
+          form={form}
+          layout="vertical"
+          onFinish={handleAdd}
+          preserve={false}
+        >
+          <Form.Item label="文件夹路径" required>
+            <Space.Compact style={{ width: '100%' }}>
+              <Input
+                value={filePath}
+                placeholder="请选择文件夹路径"
+                readOnly
+              />
+              <Button icon={<FolderOutlined />} onClick={handleFolderSelect} />
+            </Space.Compact>
           </Form.Item>
 
-          <Form.Item name="skuIds" label="关联服饰">
+          <Form.Item noStyle shouldUpdate>
+            {() => (
+              <Form.Item
+                name="name"
+                label={renderNameLabel()}
+                rules={[{ required: true, message: '请输入素材名字' }]}
+                getValueFromEvent={e => e.target.value.trim()}
+              >
+                <Input 
+                  placeholder="请输入素材名字" 
+                  onChange={handleNameChange}
+                />
+              </Form.Item>
+            )}
+          </Form.Item>
+
+          <Form.Item name="skuIds" label="关联服饰" initialValue={[]}>
             <Select
               mode="multiple"
               placeholder="请选择关联服饰"
@@ -106,22 +232,10 @@ const VideoMaterialsPage: React.FC = () => {
             >
               {skus.map(sku => (
                 <Option key={sku.id} value={sku.id}>
-                  {sku.name} ({sku.type} - {sku.brand})
+                  【{sku.brand}】{sku.name}（{sku.type}）
                 </Option>
               ))}
             </Select>
-          </Form.Item>
-
-          <Form.Item label="文件夹路径" required>
-            <Input.Group compact>
-              <Input
-                style={{ width: 'calc(100% - 32px)' }}
-                value={filePath}
-                placeholder="请选择文件夹路径"
-                readOnly
-              />
-              <Button icon={<FolderOutlined />} onClick={handleFolderSelect} />
-            </Input.Group>
           </Form.Item>
         </Form>
       </Modal>
