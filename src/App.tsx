@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Layout, Menu } from 'antd';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { SettingOutlined } from '@ant-design/icons';
 import SkuPage from './pages/sku/SkuPage';
 import VideoMaterialsPage from './pages/VideoMaterialsPage';
@@ -8,6 +8,17 @@ import FinalVideosPage from './pages/FinalVideosPage';
 import SettingsPage from './pages/SettingsPage';
 
 const { Header, Content } = Layout;
+
+// 创建一个重定向组件
+const RedirectComponent = () => {
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    navigate('/sku');
+  }, [navigate]);
+  
+  return null;
+};
 
 const App: React.FC = () => {
   return (
@@ -31,7 +42,7 @@ const App: React.FC = () => {
         </Header>
         <Content style={{ padding: 24 }}>
           <Routes>
-            <Route path="/" element={<Navigate to="/sku" />} />
+            <Route path="/" element={<RedirectComponent />} />
             <Route path="/sku" element={<SkuPage />} />
             <Route path="/materials" element={<VideoMaterialsPage />} />
             <Route path="/final-videos" element={<FinalVideosPage />} />
