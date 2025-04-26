@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Form, Input, DatePicker, AutoComplete, InputNumber, message, Modal } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, DatePicker, AutoComplete, InputNumber, message, Modal, Row, Col, Switch } from 'antd';
 import ImageUploader from '../../components/ImageUploader';
 import { Sku } from '../../db';
+import dayjs from 'dayjs';
 
 interface ImageProcessingStatus {
   processing: boolean;
@@ -18,7 +19,9 @@ interface SkuFormProps {
   modalVisible: boolean;
   setModalVisible: (visible: boolean) => void;
   submitting: boolean;
-  onSubmit: (sku: Omit<Sku, 'id'>) => Promise<void>;
+  onSubmit: (sku: Omit<Sku, 'id'>, id?: number) => Promise<void>;
+  initialData?: Sku;
+  mode?: 'create' | 'edit';
 }
 
 const SkuForm: React.FC<SkuFormProps> = ({
@@ -30,7 +33,9 @@ const SkuForm: React.FC<SkuFormProps> = ({
   modalVisible,
   setModalVisible,
   onSubmit,
-  submitting
+  submitting,
+  initialData,
+  mode = 'create'
 }) => {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [imageStatus, setImageStatus] = useState<ImageProcessingStatus>({
@@ -39,8 +44,39 @@ const SkuForm: React.FC<SkuFormProps> = ({
     statusText: ''
   });
 
-  // 重置图片状态
-  const resetImageState = () => {
+  // 初始化表单数据
+  useEffect(() => {
+    if (modalVisible) {  // 只在弹窗打开时初始化数据
+      // 先重置所有字段，确保清除旧数据
+      form.resetFields();
+      
+      if (mode === 'edit' && initialData) {
+        // 编辑模式：只设置 initialData 中存在的字段
+        const formValues = {
+          name: initialData.name || '',
+          fullName: initialData.fullName || '',
+          type: initialData.type || '',
+          brand: initialData.brand || '',
+          color: initialData.color || '',
+          buyPlatform: initialData.buyPlatform || '',
+          sizeInfo: initialData.sizeInfo || '',
+          extraInfo: initialData.extraInfo || '',
+          buyPrice: initialData.buyPrice || 0,
+          returned: initialData.returned || false,
+          buyDate: initialData.buyDate ? dayjs(initialData.buyDate) : null
+        };
+        form.setFieldsValue(formValues);
+        setImageUrl(initialData.image || '');
+      } else {
+        // 新建模式：清空所有状态
+        setImageUrl('');
+      }
+    }
+  }, [modalVisible, initialData, mode, form]);
+
+  // 重置表单和图片状态
+  const resetForm = () => {
+    form.resetFields();  // 重置所有表单字段
     setImageUrl('');
     setImageStatus({
       processing: false,
@@ -150,25 +186,30 @@ const SkuForm: React.FC<SkuFormProps> = ({
       }
 
       // 准备提交数据
-      const newSku: Omit<Sku, 'id'> = {
+      const skuData: Omit<Sku, 'id'> = {
         name: trimValues.name,
+        fullName: trimValues.fullName,
         type: trimValues.type,
         brand: trimValues.brand || '',
         color: trimValues.color || '',
         buyPlatform: trimValues.buyPlatform || '',
         sizeInfo: trimValues.sizeInfo || '',
         extraInfo: trimValues.extraInfo || '',
-        image: imageUrl, // 图片URL将在父组件中处理保存
+        image: imageUrl,
         buyDate: trimValues.buyDate.format('YYYY-MM-DD'),
         buyPrice: trimValues.buyPrice || 0,
-        modifiedTimes: [new Date().toISOString()],
+        returned: trimValues.returned || false,
+        modifiedTimes: initialData 
+          ? [...initialData.modifiedTimes, new Date().toISOString()]
+          : [new Date().toISOString()],
       };
 
-      await onSubmit(newSku);
+      // 根据模式调用不同的提交逻辑
+      await onSubmit(skuData, mode === 'edit' ? initialData?.id : undefined);
 
       // 重置表单和图片状态
       form.resetFields();
-      resetImageState();
+      resetForm();
     } catch (error) {
       console.error('提交失败:', error);
       message.error('提交失败: ' + (error as Error).message);
@@ -178,127 +219,167 @@ const SkuForm: React.FC<SkuFormProps> = ({
   return (
     <Modal
       maskClosable={false}
-      title="添加服饰"
+      title={mode === 'create' ? '添加服饰' : '编辑服饰'}
       open={modalVisible}
       onCancel={() => {
         setModalVisible(false);
-        form.resetFields();
+        resetForm();
       }}
-      afterClose={() => {
-        form.resetFields();
-        resetImageState()
-      }}
+      afterClose={resetForm}
       onOk={() => form.submit()}
       confirmLoading={submitting}
-      width={650}
+      width={1000}
     >
-
-
       <Form
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        onReset={resetImageState}
+        onReset={resetForm}
       >
-        <Form.Item
-          name="name"
-          label="名字"
-          rules={[{ required: true, message: '请输入服饰名字' }]}
-        >
-          <Input />
-        </Form.Item>
+        <Row gutter={24}>
+          <Col span={14}>
+            <Form.Item
+              name="name"
+              label="名字"
+              rules={[{ required: true, message: '请输入服饰名字' }]}
+            >
+              <Input placeholder="请输入类型" />
+            </Form.Item>
 
-        <Form.Item
-          label="图片">
-          <ImageUploader
-            imageUrl={imageUrl}
-            imageStatus={imageStatus}
-            onImageChange={processImageFile}
-          />
-        </Form.Item>
+            <Form.Item
+              name="fullName"
+              label="全称"
+            >
+              <Input placeholder="请输入全称" />
+            </Form.Item>
 
-        <Form.Item
-          name="type"
-          label="类型"
-          rules={[{ required: true, message: '请输入类型' }]}
-        >
-          <AutoComplete
-            options={typeOptions}
-            placeholder="请输入类型"
-            filterOption={(inputValue, option) =>
-              option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-            }
-          />
-        </Form.Item>
-        
-        <Form.Item
-          name="color"
-          label="颜色"
-          rules={[{ required: true, message: '请输入颜色' }]}
-        >
-          <AutoComplete
-            options={colorOptions}
-            placeholder="请输入颜色"
-            filterOption={(inputValue, option) =>
-              option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-            }
-          />
-        </Form.Item>
+            <Form.Item
+              name="type"
+              label="类型"
+              rules={[{ required: true, message: '请输入类型' }]}
+            >
+              <AutoComplete
+                options={typeOptions}
+                placeholder="请输入类型"
+                filterOption={(inputValue, option) =>
+                  option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                }
+              />
+            </Form.Item>
+            
+            <Form.Item
+              name="color"
+              label="颜色"
+              rules={[{ required: true, message: '请输入颜色' }]}
+            >
+              <AutoComplete
+                options={colorOptions}
+                placeholder="请输入颜色"
+                filterOption={(inputValue, option) =>
+                  option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                }
+              />
+            </Form.Item>
 
-        <Form.Item
-          name="brand"
-          label="品牌"
-          rules={[{ required: true, message: '请输入品牌' }]}
-        >
-          <AutoComplete
-            options={brandOptions}
-            placeholder="请输入品牌"
-            filterOption={(inputValue, option) =>
-              option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-            }
-          />
-        </Form.Item>
+            <Form.Item
+              name="brand"
+              label="品牌"
+              rules={[{ required: true, message: '请输入品牌' }]}
+            >
+              <AutoComplete
+                options={brandOptions}
+                placeholder="请输入品牌"
+                filterOption={(inputValue, option) =>
+                  option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                }
+              />
+            </Form.Item>
 
-        <Form.Item name="buyDate" label="购入时间" rules={[{ required: true, message: '请选择购入时间' }]}>
-          <DatePicker placeholder='请选择购入时间' style={{ width: '100%' }} />
-        </Form.Item>
+            <Form.Item name="buyDate" label="购入时间" rules={[{ required: true, message: '请选择购入时间' }]}>
+              <DatePicker placeholder='请选择购入时间' style={{ width: '100%' }} />
+            </Form.Item>
 
-        <Form.Item
-          name="buyPlatform"
-          label="购入平台"
-          rules={[{ required: true, message: '请输入购入平台' }]}
-        >
-          <AutoComplete
-            options={platformOptions}
-            placeholder="请输入购入平台"
-            filterOption={(inputValue, option) =>
-              option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-            }
-          />
-        </Form.Item>
+            <Form.Item
+              name="buyPlatform"
+              label="购入平台"
+              rules={[{ required: true, message: '请输入购入平台' }]}
+            >
+              <AutoComplete
+                options={platformOptions}
+                placeholder="请输入购入平台"
+                filterOption={(inputValue, option) =>
+                  option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                }
+              />
+            </Form.Item>
 
-        <Form.Item name="buyPrice" label="购入价格">
-          <InputNumber
-            style={{ width: '100%' }}
-            min={0}
-            precision={2}
-            prefix="¥"
-          />
-        </Form.Item>
+            <Form.Item name="buyPrice" label="购入价格">
+              <InputNumber
+                placeholder="请输入购入价格"
+                style={{ width: '100%' }}
+                min={0}
+                precision={2}
+                prefix="¥"
+              />
+            </Form.Item>
 
-        <Form.Item
-          name="sizeInfo"
-          label="尺码信息"
-        >
-          <Input />
-        </Form.Item>
+            <Form.Item
+              name="sizeInfo"
+              label="尺码信息"
+            >
+              <Input placeholder="请输入尺码信息" />
+            </Form.Item>
 
-        <Form.Item
-          name="extraInfo"
-          label="额外信息"
-        >
-          <Input.TextArea />
-        </Form.Item>
+            <Form.Item
+              name="returned"
+              label="是否退货"
+              valuePropName="checked"
+            >
+              <Switch checkedChildren="是" unCheckedChildren="否" />
+            </Form.Item>
+          </Col>
+
+          <Col span={10}>
+            <div style={{ 
+              display: 'grid',
+              gridTemplateRows: 'auto 1fr',
+              gap: '24px',
+              height: '100%',
+              minHeight: '600px'
+            }}>
+              <Form.Item 
+                label="图片"
+                style={{ marginBottom: 0 }}
+              >
+                <ImageUploader
+                  imageUrl={imageUrl}
+                  imageStatus={imageStatus}
+                  onImageChange={processImageFile}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="extraInfo"
+                label="额外信息"
+                style={{ 
+                  marginBottom: 0,
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+              >
+                <Input.TextArea 
+                  style={{ 
+                    height: '100%',
+                    minHeight: '300px',
+                    resize: 'none'
+                  }}
+                  placeholder="请输入额外信息"
+                />
+              </Form.Item>
+            </div>
+          </Col>
+        </Row>
       </Form>
     </Modal>
   );

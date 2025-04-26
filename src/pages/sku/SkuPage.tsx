@@ -14,6 +14,8 @@ const SkuPage: React.FC = () => {
   const [brandOptions, setBrandOptions] = useState<{ value: string }[]>([]);
   const [platformOptions, setPlatformOptions] = useState<{ value: string }[]>([]);
   const [colorOptions, setColorOptions] = useState<{ value: string }[]>([]);
+  const [currentSku, setCurrentSku] = useState<Sku | undefined>();
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   // 添加缓存引用
   const imageCache = useRef<Map<string, string>>(new Map());
 
@@ -25,7 +27,7 @@ const SkuPage: React.FC = () => {
       const processedClothes = all.map(item => ({
         ...item,
         image: item.image ? (imageCache.current.get(item.image) || item.image) : ''
-      }));
+      })).reverse();
       
       setClothes(processedClothes);
       
@@ -53,62 +55,88 @@ const SkuPage: React.FC = () => {
     };
   }, []);
 
-  const handleSubmit = async (values: Omit<Sku, 'id'>) => {
+  const handleSubmit = async (values: Omit<Sku, 'id'>, id?: number) => {
     try {
       setSubmitting(true);
       
       // 处理图片保存
       let finalImagePath = '';
       if (values.image) {
-        const saveResult = await window.electronAPI.saveImage(values.image);
-        if (!saveResult.success) {
-          message.error(`图片保存失败: ${saveResult.message}`);
-          return;
+        // 如果是编辑模式且图片路径没有改变，直接使用原路径
+        if (id && values.image === currentSku?.image) {
+          finalImagePath = values.image;
+        } else {
+          const saveResult = await window.electronAPI.saveImage(values.image);
+          if (!saveResult.success) {
+            message.error(`图片保存失败: ${saveResult.message}`);
+            return;
+          }
+          finalImagePath = saveResult.path;
         }
-        finalImagePath = saveResult.path;
       }
 
-      const newSku: Omit<Sku, 'id'> = {
+      const skuData: Omit<Sku, 'id'> = {
         ...values,
         image: finalImagePath
       };
 
-      // 保存到数据库
-      await db.skus.add(newSku);
+      if (id) {
+        // 编辑模式
+        await db.skus.update(id, skuData);
+        message.success('更新成功');
+      } else {
+        // 新增模式
+        await db.skus.add(skuData);
+        message.success('添加成功');
+      }
       
       setModalVisible(false);
       fetchClothes();
-      message.success('添加成功');
     } catch (error) {
-      console.error('添加失败:', error);
-      message.error('添加失败: ' + (error as Error).message);
+      console.error(id ? '更新失败:' : '添加失败:', error);
+      message.error((id ? '更新' : '添加') + '失败: ' + (error as Error).message);
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleEdit = (record: Sku) => {
+    setCurrentSku(record);
+    setFormMode('edit');
+    setModalVisible(true);
+  };
+
+  const handleAdd = () => {
+    setCurrentSku(undefined);
+    setFormMode('create');
+    setModalVisible(true);
+  };
+
   return (
     <div>
-      <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalVisible(true)}>
+      <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
         添加服饰
       </Button>
       
       <SkuTable 
         dataSource={clothes} 
         onDataChange={fetchClothes}
+        onEdit={handleEdit}
       />
       
       <SkuForm
-          modalVisible={modalVisible}
-          setModalVisible={setModalVisible}
-          form={form}
-          colorOptions={colorOptions}
-          typeOptions={typeOptions}
-          brandOptions={brandOptions}
-          platformOptions={platformOptions}
-          onSubmit={handleSubmit}
-          submitting={submitting}
-        />
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        form={form}
+        colorOptions={colorOptions}
+        typeOptions={typeOptions}
+        brandOptions={brandOptions}
+        platformOptions={platformOptions}
+        onSubmit={handleSubmit}
+        submitting={submitting}
+        initialData={currentSku}
+        mode={formMode}
+      />
     </div>
   );
 };

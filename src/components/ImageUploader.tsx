@@ -22,6 +22,17 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 }) => {
   const pasteAreaRef = useRef<HTMLDivElement>(null);
 
+  // 判断是否为文件路径
+  const isFilePath = (url: string) => {
+    return !url.startsWith('data:');
+  };
+
+  // 获取图片显示地址
+  const getDisplayUrl = (url: string) => {
+    if (!url) return '';
+    return isFilePath(url) ? `file://${encodeURI(url)}` : url;
+  };
+
   useEffect(() => {
     const currentRef = pasteAreaRef.current;
     if (currentRef) {
@@ -116,11 +127,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           <div style={{ padding: '20px', textAlign: 'center', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
             <div style={{ position: 'relative', marginBottom: 16, borderRadius: '4px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', display: 'inline-block', maxWidth: '90%' }}>
               <img 
-                src={imageUrl}
+                src={getDisplayUrl(imageUrl)}
                 alt="预览" 
                 style={{ maxWidth: '100%', maxHeight: '180px', display: 'block', objectFit: 'contain' }}
                 onError={(e) => {
-                  console.log('图片加载失败', e);
+                  console.error('图片加载失败', e);
                 }}
               />
             </div>

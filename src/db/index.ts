@@ -3,6 +3,7 @@ import Dexie, { Table } from 'dexie';
 export interface Sku {
   id?: number;
   name: string;
+  fullName: string;
   image: string;
   type: string;
   brand: string;
@@ -12,6 +13,7 @@ export interface Sku {
   buyPrice: number;
   sizeInfo: string;
   extraInfo: string;
+  returned: boolean; // 是否退货
   modifiedTimes: string[]; // 修改时间列表，第一个是创建时间
 }
 
@@ -42,7 +44,7 @@ class VideoManagerDB extends Dexie {
 
   constructor() {
     super('VideoManagerDB');
-    this.version(6).stores({
+    this.version(7).stores({
       skus: '++id, name, type, brand, color',
       videoMaterials: '++id, name, filePath',
       finalVideos: '++id, name, publishStatus, videoPath',

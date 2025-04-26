@@ -7,9 +7,10 @@ import { db } from '../../db';
 interface SkuTableProps {
   dataSource: Sku[];
   onDataChange: () => void;
+  onEdit: (record: Sku) => void;
 }
 
-const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange }) => {
+const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit }) => {
   const handleDelete = async (id: number) => {
     try {
       // 检查是否有视频素材引用这个服饰
@@ -90,7 +91,7 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange }) => {
                 objectFit: 'cover'
               }}
               onError={(e) => {
-                console.log('图片加载失败', e);
+                console.error('图片加载失败', e);
               }}
             />
           </div>
@@ -105,6 +106,17 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange }) => {
     { title: '购入平台', dataIndex: 'buyPlatform', key: 'buyPlatform', width: 120 },
     { title: '购入价格', dataIndex: 'buyPrice', key: 'buyPrice', width: 100 },
     { title: '尺码信息', dataIndex: 'sizeInfo', key: 'sizeInfo', width: 120 },
+    { 
+      title: '退货状态', 
+      dataIndex: 'returned', 
+      key: 'returned', 
+      width: 100,
+      render: (returned: boolean) => (
+        <span style={{ color: returned ? '#ff4d4f' : '#52c41a' }}>
+          {returned ? '已退货' : '未退货'}
+        </span>
+      )
+    },
     {
       title: '操作',
       key: 'action',
@@ -136,8 +148,12 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange }) => {
       scroll={{ x: 1300 }}
       rowKey="id" 
       columns={columns} 
-      dataSource={dataSource} 
-      style={{ marginTop: 16 }} 
+      dataSource={dataSource}
+      style={{ marginTop: 16 }}
+      onRow={(record) => ({
+        onClick: () => onEdit(record),  // 点击行时触发编辑
+        style: { cursor: 'pointer' }  // 添加手型光标样式
+      })}
     />
   );
 };
