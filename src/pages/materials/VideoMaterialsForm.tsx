@@ -173,7 +173,7 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
           >
             {skus.map(sku => (
               <Option key={sku.id} value={sku.id}>
-                【{sku.brand}】{sku.name}（{sku.type}）
+                [{sku.id}]【{sku.brand}】{sku.name}（{sku.type}）
               </Option>
             ))}
           </Select>

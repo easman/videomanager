@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Popconfirm, message, Modal, Space, Image } from 'antd';
-import { PictureOutlined, DeleteOutlined, SwapOutlined, EditOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Table, Button, Popconfirm, message, Modal, Space, Image, Input } from 'antd';
+import { PictureOutlined, DeleteOutlined, SwapOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
 import { Sku } from '../../db';
 import { db } from '../../db';
 
@@ -10,11 +10,15 @@ interface SkuTableProps {
   onEdit: (record: Sku) => void;
 }
 
+// 定义可搜索的字段
+const SEARCHABLE_FIELDS = ['id', 'name', 'type', 'color', 'brand', 'buyPlatform'] as const;
+
 const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit }) => {
   // 选中的行
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   // 批量操作模式
   const [batchMode, setBatchMode] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
   // 添加数据检查
   React.useEffect(() => {
@@ -24,6 +28,18 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
       returned: sku.returned
     })));
   }, [dataSource]);
+
+  // 过滤后的数据
+  const filteredData = useMemo(() => {
+    if (!searchText) return dataSource;
+    
+    const searchLower = searchText.toLowerCase();
+    return dataSource.filter(item => 
+      SEARCHABLE_FIELDS.some(field => 
+        String(item[field] || '').toLowerCase().includes(searchLower)
+      )
+    );
+  }, [dataSource, searchText]);
 
   const handleDelete = async (id: number) => {
     try {
@@ -180,7 +196,7 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
               onEdit(record);
             }}
           >
-            编辑
+            查看
           </Button>
           <Popconfirm
             title="确定删除吗？"
@@ -216,7 +232,7 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
       scroll={{ x: 1400, y: 'calc(100vh - 300px)' }}
       rowKey="id" 
       columns={columns} 
-      dataSource={dataSource}
+      dataSource={filteredData}
       rowSelection={batchMode ? rowSelection : undefined}
       onRow={(record) => ({
         style: { cursor: 'default' }
@@ -226,16 +242,33 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px'
         }}>
-          <span style={{ fontSize: '16px', fontWeight: 500 }}>服饰列表</span>
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            flex: 1
+          }}>
+            <span style={{ fontSize: '16px', fontWeight: 500, whiteSpace: 'nowrap' }}>服饰列表</span>
+            <Input
+              placeholder="搜索名字、类型、颜色、品牌、购入平台"
+              prefix={<SearchOutlined style={{ color: '#999' }} />}
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              style={{ maxWidth: '400px' }}
+              allowClear
+            />
+          </div>
           <Space>
             <Button
               type={batchMode ? "primary" : "default"}
               icon={<SwapOutlined />}
               onClick={() => {
                 setBatchMode(!batchMode);
-                setSelectedRowKeys([]); // 切换模式时清空选择
+                setSelectedRowKeys([]);
               }}
             >
               {batchMode ? '退出' : '批量退货'}
