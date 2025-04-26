@@ -93,7 +93,10 @@ const SkuPage: React.FC = () => {
         添加服饰
       </Button>
       
-      <SkuTable dataSource={clothes} />
+      <SkuTable 
+        dataSource={clothes} 
+        onDataChange={fetchClothes}
+      />
       
       <SkuForm
           modalVisible={modalVisible}

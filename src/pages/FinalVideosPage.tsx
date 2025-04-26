@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Tag, Space, Tooltip } from 'antd';
-import { PlusOutlined, FolderOutlined, SwapOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Tag, Space, Tooltip, Popconfirm } from 'antd';
+import { PlusOutlined, FolderOutlined, SwapOutlined, DeleteOutlined } from '@ant-design/icons';
 import { db, FinalVideo, Sku, VideoMaterial } from '../db';
 import dayjs from 'dayjs';
 import { getLastDirectory, getFileNameWithoutExtension } from '../utils/path';
@@ -148,6 +148,17 @@ const FinalVideosPage: React.FC = () => {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    try {
+      await db.finalVideos.delete(id);
+      message.success('删除成功');
+      fetchData();
+    } catch (error) {
+      console.error('删除失败:', error);
+      message.error('删除失败: ' + (error as Error).message);
+    }
+  };
+
   const columns = [
     { 
       title: '名字', 
@@ -238,6 +249,29 @@ const FinalVideosPage: React.FC = () => {
       key: 'publishTime',
       width: 180,
       render: (time: string | undefined) => time || '-'
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 80,
+      fixed: 'right' as const,
+      render: (_: any, record: FinalVideo) => (
+        <Popconfirm
+          title="确定删除吗？"
+          description="删除后无法恢复"
+          onConfirm={() => handleDelete(record.id as number)}
+          okText="确定"
+          cancelText="取消"
+        >
+          <Button 
+            type="link" 
+            danger 
+            icon={<DeleteOutlined />}
+          >
+            删除
+          </Button>
+        </Popconfirm>
+      ),
     }
   ];
 
@@ -268,7 +302,14 @@ const FinalVideosPage: React.FC = () => {
       <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
         添加成品视频
       </Button>
-      <Table sticky={true} rowKey="id" columns={columns} dataSource={finalVideos} style={{ marginTop: 16 }} />
+      <Table 
+        sticky={true} 
+        scroll={{ x: 1200 }}
+        rowKey="id" 
+        columns={columns} 
+        dataSource={finalVideos} 
+        style={{ marginTop: 16 }} 
+      />
       <Modal
         maskClosable={false}
         title="添加成品视频"
