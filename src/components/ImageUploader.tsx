@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Upload, Button, Progress, Spin, message } from 'antd';
+import { Upload, Button, Progress, Spin, message, Image } from 'antd';
 import { UploadOutlined, InboxOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 
@@ -87,7 +87,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       tabIndex={0}
       onClick={() => {
         pasteAreaRef.current?.focus();
-        message.info('区域已激活，可以按Ctrl+V粘贴图片');
       }}
     >
       {!imageUrl && !imageStatus.processing && (
@@ -105,7 +104,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             zIndex: 5
           }}
         >
-          <kbd style={{background: '#fff', border: '1px solid #d9d9d9', borderRadius: '3px', padding: '1px 4px', boxShadow: '0 1px 1px rgba(0,0,0,0.1)'}}>Ctrl</kbd>+<kbd style={{background: '#fff', border: '1px solid #d9d9d9', borderRadius: '3px', padding: '1px 4px', boxShadow: '0 1px 1px rgba(0,0,0,0.1)'}}>V</kbd> 粘贴图片
+          <kbd style={{background: '#fff', border: '1px solid #d9d9d9', borderRadius: '3px', padding: '1px 4px', boxShadow: '0 1px 1px rgba(0,0,0,0.1)'}}>command</kbd>+<kbd style={{background: '#fff', border: '1px solid #d9d9d9', borderRadius: '3px', padding: '1px 4px', boxShadow: '0 1px 1px rgba(0,0,0,0.1)'}}>v</kbd> 粘贴图片
         </div>
       )}
       <Dragger {...draggerProps} style={{ padding: imageUrl ? '0' : '20px 0', background: 'transparent', border: 'none' }}>
@@ -126,10 +125,13 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         ) : imageUrl ? (
           <div style={{ padding: '20px', textAlign: 'center', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
             <div style={{ position: 'relative', marginBottom: 16, borderRadius: '4px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', display: 'inline-block', maxWidth: '90%' }}>
-              <img 
+              <Image 
                 src={getDisplayUrl(imageUrl)}
                 alt="预览" 
                 style={{ maxWidth: '100%', maxHeight: '180px', display: 'block', objectFit: 'contain' }}
+                preview={{
+                  mask: <div style={{ color: '#fff' }}></div>,
+                }}
                 onError={(e) => {
                   console.error('图片加载失败', e);
                 }}
@@ -159,7 +161,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
               点击下方按钮选择图片或拖拽图片到此区域上传
             </p>
             <p className="ant-upload-hint" style={{ fontSize: 14, color: 'rgba(0, 0, 0, 0.45)', margin: '8px 0 16px' }}>
-              支持单个图片上传。也可以直接复制图片后，点击区域并按Ctrl+V粘贴。
+              支持单个图片上传。也可以直接复制图片后，点击区域并按command+v粘贴。
             </p>
             <Button 
               type="primary" 

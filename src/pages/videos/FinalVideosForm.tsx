@@ -144,6 +144,8 @@ const FinalVideosForm: React.FC<FinalVideosFormProps> = ({
       open={modalVisible}
       onCancel={resetForm}
       onOk={() => form.submit()}
+      cancelText="取消"
+      okText="提交"
       confirmLoading={submitting}
       width={800}
     >

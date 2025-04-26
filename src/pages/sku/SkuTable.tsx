@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Table, Button, Popconfirm, message, Modal, Space } from 'antd';
-import { PictureOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons';
+import { Table, Button, Popconfirm, message, Modal, Space, Image } from 'antd';
+import { PictureOutlined, DeleteOutlined, SwapOutlined, EditOutlined } from '@ant-design/icons';
 import { Sku } from '../../db';
 import { db } from '../../db';
 
@@ -83,12 +83,13 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
+    { title: 'ID', dataIndex: 'id', key: 'id', width: 60, fixed: 'left' as const },
     { 
       title: '图片', 
       dataIndex: 'image', 
       key: 'image',
-      width: 90, 
+      width: 90,
+      fixed: 'left' as const,
       render: (imagePath: string) => {
         if (!imagePath) {
           return (
@@ -113,14 +114,13 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
               width: 60,
               height: 60,
               position: 'relative',
-              cursor: 'pointer',
               borderRadius: '4px',
               overflow: 'hidden'
             }}
           >
-            <img 
+            <Image
               src={`file://${encodeURI(imagePath)}`}
-              alt="服饰图片" 
+              alt="服饰图片"
               style={{ 
                 width: '100%',
                 height: '100%',
@@ -128,6 +128,9 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
               }}
               onError={(e) => {
                 console.error('图片加载失败', e);
+              }}
+              preview={{
+                mask: <div style={{ color: '#fff' }}></div>,
               }}
             />
           </div>
@@ -165,24 +168,36 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
     {
       title: '操作',
       key: 'action',
-      width: 80,
+      width: 160,
       fixed: 'right' as const,
       render: (_: any, record: Sku) => (
-        <Popconfirm
-          title="确定删除吗？"
-          description="删除后无法恢复"
-          onConfirm={() => handleDelete(record.id as number)}
-          okText="确定"
-          cancelText="取消"
-        >
+        <Space>
           <Button 
             type="link" 
-            danger 
-            icon={<DeleteOutlined />}
+            icon={<EditOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(record);
+            }}
           >
-            删除
+            编辑
           </Button>
-        </Popconfirm>
+          <Popconfirm
+            title="确定删除吗？"
+            description="删除后无法恢复"
+            onConfirm={() => handleDelete(record.id as number)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Button 
+              type="link" 
+              danger 
+              icon={<DeleteOutlined />}
+            >
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     }
   ];
@@ -198,19 +213,15 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
   return (
     <Table 
       sticky={true}
-      scroll={{ x: 1300 }}
+      scroll={{ x: 1400, y: 'calc(100vh - 300px)' }}
       rowKey="id" 
       columns={columns} 
       dataSource={dataSource}
       rowSelection={batchMode ? rowSelection : undefined}
       onRow={(record) => ({
-        onClick: () => {
-          if (!batchMode) {
-            onEdit(record);  // 非批量操作模式下点击行触发编辑
-          }
-        },
-        style: { cursor: batchMode ? 'default' : 'pointer' }
+        style: { cursor: 'default' }
       })}
+      style={{ width: '100%' }}
       title={() => (
         <div style={{ 
           display: 'flex', 

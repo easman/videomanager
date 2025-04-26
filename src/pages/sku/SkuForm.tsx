@@ -221,6 +221,8 @@ const SkuForm: React.FC<SkuFormProps> = ({
       maskClosable={false}
       title={mode === 'create' ? '添加服饰' : '编辑服饰'}
       open={modalVisible}
+      cancelText="取消"
+      okText="提交"
       onCancel={() => {
         setModalVisible(false);
         resetForm();
