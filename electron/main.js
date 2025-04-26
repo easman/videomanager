@@ -6,6 +6,9 @@ const crypto = require('crypto');
 // 判断是否是开发环境
 const isDev = !app.isPackaged;
 
+// 保存主窗口引用
+let mainWindow = null;
+
 // 添加日志
 console.log('App starting...');
 console.log('Is Dev:', isDev);
@@ -29,7 +32,7 @@ const getImagesDir = () => {
 function createWindow () {
   console.log('Creating window...');
   
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
@@ -42,38 +45,38 @@ function createWindow () {
 
   // 开发环境下打开开发者工具
   if (isDev) {
-    win.webContents.openDevTools();
+    mainWindow.webContents.openDevTools();
   } else {
     // 在生产环境中也打开开发者工具以便调试
-    // win.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools();
   }
 
   // 加载应用
   if (isDev) {
     console.log('Loading development URL...');
-    win.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:5173');
   } else {
     const indexPath = path.join(__dirname, '../dist/index.html');
     console.log('Loading production path:', indexPath);
     console.log('File exists:', fs.existsSync(indexPath));
     
     if (fs.existsSync(indexPath)) {
-      win.loadFile(indexPath);
+      mainWindow.loadFile(indexPath);
     } else {
       console.error('错误：找不到打包后的 index.html 文件！');
       console.log('Current directory:', __dirname);
       console.log('Available files in dist:', fs.existsSync(path.join(__dirname, '../dist')) ? 
         fs.readdirSync(path.join(__dirname, '../dist')) : 'dist directory not found');
-      win.loadFile(path.join(__dirname, 'error.html'));
+      mainWindow.loadFile(path.join(__dirname, 'error.html'));
     }
   }
 
   // 监听加载错误
-  win.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
     console.error('Page failed to load:', errorCode, errorDescription);
   });
 
-  return win;
+  return mainWindow;
 }
 
 // 处理选择文件夹
@@ -191,6 +194,28 @@ ipcMain.handle('clear-directory', async (event, dirPath) => {
       success: false, 
       message: error.message 
     };
+  }
+});
+
+// 开发者工具控制
+let devToolsEnabled = isDev; // 开发环境下默认启用
+
+ipcMain.handle('isDevToolsEnabled', () => {
+  return devToolsEnabled;
+});
+
+ipcMain.handle('toggleDevTools', (_, enabled) => {
+  try {
+    devToolsEnabled = enabled;
+    if (enabled) {
+      mainWindow?.webContents.openDevTools();
+    } else {
+      mainWindow?.webContents.closeDevTools();
+    }
+    return true;
+  } catch (error) {
+    console.error('切换开发者工具失败:', error);
+    return false;
   }
 });
 

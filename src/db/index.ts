@@ -1,4 +1,4 @@
-import Dexie, { Table } from 'dexie';
+import Dexie, { Table, Transaction } from 'dexie';
 
 export interface Sku {
   id?: number;
@@ -44,10 +44,50 @@ class VideoManagerDB extends Dexie {
 
   constructor() {
     super('VideoManagerDB');
-    this.version(7).stores({
+    
+    // 更新到版本7，添加 returned 字段
+    this.version(6).stores({
       skus: '++id, name, type, brand, color',
       videoMaterials: '++id, name, filePath',
       finalVideos: '++id, name, publishStatus, videoPath',
+    });
+
+    this.version(7).stores({
+      skus: '++id, name, type, brand, color, returned',  // 添加 returned 索引
+      videoMaterials: '++id, name, filePath',
+      finalVideos: '++id, name, publishStatus, videoPath',
+    }).upgrade(async (trans: Transaction) => {
+      // 获取 skus 表
+      const skuTable = trans.table('skus');
+      
+      // 获取所有记录
+      const allSkus = await skuTable.toArray();
+      
+      // 更新每条记录
+      for (const sku of allSkus) {
+        await skuTable.update(sku.id as number, {
+          returned: sku.returned === undefined ? false : sku.returned
+        });
+      }
+    });
+
+    // 添加版本8，确保所有记录都有 returned 字段
+    this.version(8).stores({
+      skus: '++id, name, type, brand, color, returned',
+      videoMaterials: '++id, name, filePath',
+      finalVideos: '++id, name, publishStatus, videoPath',
+    }).upgrade(async (trans: Transaction) => {
+      const skuTable = trans.table('skus');
+      
+      // 强制更新所有记录的 returned 字段
+      await skuTable.toCollection().modify(sku => {
+        if (sku.returned === undefined || sku.returned === null) {
+          sku.returned = false;
+        } else {
+          // 确保类型为 boolean
+          sku.returned = Boolean(sku.returned);
+        }
+      });
     });
   }
 }
