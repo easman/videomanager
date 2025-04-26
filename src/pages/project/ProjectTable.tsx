@@ -124,11 +124,12 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       title: '视频路径', 
       dataIndex: 'videoPath', 
       key: 'videoPath',
-      width: 120,
+      width: 150,
       render: (videoPath: string) => (
         <div style={{ 
           maxWidth: '100%',
-          overflow: 'hidden'
+          wordBreak: 'break-all',
+          whiteSpace: 'normal'
         }}>
           {videoPath ? <VideoFileTag filePath={videoPath} /> : '-'}
         </div>

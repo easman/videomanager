@@ -1,6 +1,7 @@
 import React from 'react';
-import { Tag, message } from 'antd';
+import { Tag, message, Tooltip } from 'antd';
 import { getLastDirectory } from '../utils/path';
+import { FolderOutlined } from '@ant-design/icons';
 
 interface MaterialFolderTagProps {
   filePath: string;
@@ -32,20 +33,29 @@ const MaterialFolderTag: React.FC<MaterialFolderTagProps> = ({
   };
 
   return (
-    <Tag 
-      style={{ 
-        cursor: 'pointer',
-        ...style 
-      }}
-      onClick={handleClick}
-      closable={!!onClose}
-      onClose={(e) => {
-        e.stopPropagation();
-        onClose?.();
-      }}
-    >
-      {getLastDirectory(filePath)}
-    </Tag>
+    <Tooltip title={filePath}>
+      <Tag 
+        icon={<FolderOutlined />}
+        style={{ 
+          cursor: 'pointer',
+          maxWidth: '100%',
+          whiteSpace: 'normal',
+          wordBreak: 'break-all',
+          height: 'auto',
+          paddingTop: 4,
+          paddingBottom: 4,
+          ...style 
+        }}
+        onClick={handleClick}
+        closable={!!onClose}
+        onClose={(e) => {
+          e.stopPropagation();
+          onClose?.();
+        }}
+      >
+        {getLastDirectory(filePath)}
+      </Tag>
+    </Tooltip>
   );
 };
 

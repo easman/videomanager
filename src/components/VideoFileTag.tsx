@@ -41,10 +41,11 @@ const VideoFileTag: React.FC<VideoFileTagProps> = ({
         style={{ 
           cursor: 'pointer',
           maxWidth: '100%',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          verticalAlign: 'middle',
+          whiteSpace: 'normal',
+          wordBreak: 'break-all',
+          height: 'auto',
+          paddingTop: 4,
+          paddingBottom: 4,
           ...style 
         }}
         onClick={handleClick}

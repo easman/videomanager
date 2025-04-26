@@ -158,9 +158,15 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
       title: '素材文件夹', 
       dataIndex: 'filePath', 
       key: 'filePath',
-      width: 100,
+      width: 150,
       render: (filePath: string) => (
-        <MaterialFolderTag filePath={filePath} />
+        <div style={{ 
+          maxWidth: '100%',
+          wordBreak: 'break-all',
+          whiteSpace: 'normal'
+        }}>
+          <MaterialFolderTag filePath={filePath} />
+        </div>
       )
     },
     { 
