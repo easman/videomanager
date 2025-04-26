@@ -14,6 +14,7 @@ interface SkuFormProps {
   typeOptions: { value: string }[];
   brandOptions: { value: string }[];
   platformOptions: { value: string }[];
+  colorOptions: { value: string }[];
   modalVisible: boolean;
   setModalVisible: (visible: boolean) => void;
   submitting: boolean;
@@ -25,6 +26,7 @@ const SkuForm: React.FC<SkuFormProps> = ({
   typeOptions,
   brandOptions,
   platformOptions,
+  colorOptions,
   modalVisible,
   setModalVisible,
   onSubmit,
@@ -127,6 +129,7 @@ const SkuForm: React.FC<SkuFormProps> = ({
       if (trimValues.name) trimValues.name = String(trimValues.name).trim();
       if (trimValues.type) trimValues.type = String(trimValues.type).trim();
       if (trimValues.brand) trimValues.brand = String(trimValues.brand).trim();
+      if (trimValues.color) trimValues.color = String(trimValues.color).trim();
       if (trimValues.buyPlatform) trimValues.buyPlatform = String(trimValues.buyPlatform).trim();
       if (trimValues.sizeInfo) trimValues.sizeInfo = String(trimValues.sizeInfo).trim();
       if (trimValues.extraInfo) trimValues.extraInfo = String(trimValues.extraInfo).trim();
@@ -152,6 +155,7 @@ const SkuForm: React.FC<SkuFormProps> = ({
         name: trimValues.name,
         type: trimValues.type,
         brand: trimValues.brand || '',
+        color: trimValues.color || '',
         buyPlatform: trimValues.buyPlatform || '',
         sizeInfo: trimValues.sizeInfo || '',
         extraInfo: trimValues.extraInfo || '',
@@ -232,6 +236,25 @@ const SkuForm: React.FC<SkuFormProps> = ({
           <AutoComplete
             options={typeOptions}
             placeholder="请输入类型"
+            filterOption={(inputValue, option) =>
+              option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+            }
+          />
+        </Form.Item>
+        
+        <Form.Item
+          name="color"
+          label="颜色"
+          rules={[{ required: true, message: '请输入颜色' }]}
+          getValueFromEvent={value => {
+            if (typeof value === 'string') return value.trim();
+            if (value && value.target) return value.target.value.trim();
+            return value;
+          }}
+        >
+          <AutoComplete
+            options={colorOptions}
+            placeholder="请输入颜色"
             filterOption={(inputValue, option) =>
               option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
             }

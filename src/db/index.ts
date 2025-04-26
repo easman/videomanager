@@ -6,6 +6,7 @@ export interface Sku {
   image: string;
   type: string;
   brand: string;
+  color: string;
   buyDate: string;
   buyPlatform: string;
   buyPrice: number;
@@ -41,8 +42,8 @@ class VideoManagerDB extends Dexie {
 
   constructor() {
     super('VideoManagerDB');
-    this.version(5).stores({
-      skus: '++id, name, type, brand',
+    this.version(6).stores({
+      skus: '++id, name, type, brand, color',
       videoMaterials: '++id, name, filePath',
       finalVideos: '++id, name, publishStatus, videoPath',
     });

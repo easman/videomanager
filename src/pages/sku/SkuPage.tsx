@@ -13,7 +13,7 @@ const SkuPage: React.FC = () => {
   const [typeOptions, setTypeOptions] = useState<{ value: string }[]>([]);
   const [brandOptions, setBrandOptions] = useState<{ value: string }[]>([]);
   const [platformOptions, setPlatformOptions] = useState<{ value: string }[]>([]);
-  
+  const [colorOptions, setColorOptions] = useState<{ value: string }[]>([]);
   // 添加缓存引用
   const imageCache = useRef<Map<string, string>>(new Map());
 
@@ -32,10 +32,12 @@ const SkuPage: React.FC = () => {
       // 获取所有已存在的类型、品牌和平台，并去重
       const types = Array.from(new Set(all.map(item => item.type))).filter(Boolean);
       const brands = Array.from(new Set(all.map(item => item.brand))).filter(Boolean);
+      const colors = Array.from(new Set(all.map(item => item.color))).filter(Boolean);
       const platforms = Array.from(new Set(all.map(item => item.buyPlatform))).filter(Boolean);
       
       setTypeOptions(types.map(type => ({ value: type })));
       setBrandOptions(brands.map(brand => ({ value: brand })));
+      setColorOptions(colors.map(color => ({ value: color })));
       setPlatformOptions(platforms.map(platform => ({ value: platform })));
     } catch (error) {
       console.error('获取数据失败:', error);
@@ -97,6 +99,7 @@ const SkuPage: React.FC = () => {
           modalVisible={modalVisible}
           setModalVisible={setModalVisible}
           form={form}
+          colorOptions={colorOptions}
           typeOptions={typeOptions}
           brandOptions={brandOptions}
           platformOptions={platformOptions}

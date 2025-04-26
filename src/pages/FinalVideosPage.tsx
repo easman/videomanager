@@ -365,10 +365,8 @@ const FinalVideosPage: React.FC = () => {
             name="publishStatus" 
             label="发布状态" 
             rules={[{ required: true, message: '请选择发布状态' }]}
-            initialValue="待编辑"
           >
             <Select
-              showSearch
               optionFilterProp="children"
               filterOption={(input, option) => {
                 if (!option?.children) return false;

@@ -62,6 +62,7 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource }) => {
     },
     { title: '名字', dataIndex: 'name', key: 'name' },
     { title: '类型', dataIndex: 'type', key: 'type' },
+    { title: '颜色', dataIndex: 'color', key: 'color' },
     { title: '品牌', dataIndex: 'brand', key: 'brand' },
     { title: '购入时间', dataIndex: 'buyDate', key: 'buyDate' },
     { title: '购入平台', dataIndex: 'buyPlatform', key: 'buyPlatform' },

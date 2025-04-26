@@ -45,7 +45,7 @@ function createWindow () {
     win.webContents.openDevTools();
   } else {
     // 在生产环境中也打开开发者工具以便调试
-    win.webContents.openDevTools();
+    // win.webContents.openDevTools();
   }
 
   // 加载应用
