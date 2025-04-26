@@ -36,6 +36,12 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
     
     const searchLower = searchText.toLowerCase();
     return dataSource.filter(material => {
+
+      // 搜索ID
+      if (String(material.id).includes(searchLower)) {
+        return true;
+      }
+
       // 搜索名字
       if (material.name.toLowerCase().includes(searchLower)) {
         return true;
