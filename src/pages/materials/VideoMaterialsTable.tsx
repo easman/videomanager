@@ -1,6 +1,6 @@
-import React from 'react';
-import { Table, Button, Tag, Space, Popconfirm, Modal } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import React, { useState, useMemo } from 'react';
+import { Table, Button, Tag, Space, Popconfirm, Modal, Input, message } from 'antd';
+import { DeleteOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
 import { VideoMaterial, Sku, db } from '../../db';
 import { getLastDirectory } from '../../utils/path';
 
@@ -8,13 +8,78 @@ interface VideoMaterialsTableProps {
   dataSource: VideoMaterial[];
   skus: Sku[];
   onDelete: (id: number) => Promise<void>;
+  onEdit: (record: VideoMaterial) => void;
 }
 
 const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
   dataSource,
   skus,
-  onDelete
+  onDelete,
+  onEdit
 }) => {
+  const [searchText, setSearchText] = useState('');
+
+  const handleOpenFolder = async (folderPath: string) => {
+    try {
+      const result = await window.electronAPI.openFolder(folderPath);
+      if (!result.success) {
+        message.error('打开文件夹失败：' + result.message);
+      }
+    } catch (error) {
+      console.error('打开文件夹失败：', error);
+    }
+  };
+
+  // 过滤后的数据
+  const filteredData = useMemo(() => {
+    if (!searchText) return dataSource;
+    
+    const searchLower = searchText.toLowerCase();
+    return dataSource.filter(material => {
+      // 搜索名字
+      if (material.name.toLowerCase().includes(searchLower)) {
+        return true;
+      }
+
+      // 搜索文件夹路径
+      if (material.filePath.toLowerCase().includes(searchLower)) {
+        return true;
+      }
+
+      // 搜索关联服饰的信息
+      if (material.skuIds?.some(skuId => {
+        const sku = skus.find(s => s.id === skuId);
+        if (!sku) return false;
+
+        // 搜索服饰 ID
+        if (String(skuId).includes(searchLower)) {
+          return true;
+        }
+
+        // 搜索服饰品牌
+        if (sku.brand.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+
+        // 搜索服饰名字
+        if (sku.name.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+
+        // 搜索服饰类型
+        if (sku.type.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+
+        return false;
+      })) {
+        return true;
+      }
+
+      return false;
+    });
+  }, [dataSource, skus, searchText]);
+
   const handleDelete = async (id: number) => {
     try {
       // 检查是否有成品视频引用这个素材
@@ -48,25 +113,38 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
 
   const columns = [
     { 
-      title: '名字', 
-      dataIndex: 'name', 
-      key: 'name',
-      width: 200,
+      title: 'ID', 
+      dataIndex: 'id', 
+      key: 'id',
+      width: 50,
       ellipsis: true
     },
     { 
-      title: '文件夹路径', 
+      title: '名字', 
+      dataIndex: 'name', 
+      key: 'name',
+      width: 100,
+      ellipsis: false
+    },
+    { 
+      title: '素材文件夹', 
       dataIndex: 'filePath', 
       key: 'filePath',
-      width: 200,
+      width: 100,
       render: (filePath: string) => (
-        <Tag>{getLastDirectory(filePath)}</Tag>
+        <Tag 
+          style={{ cursor: 'pointer' }}
+          onClick={() => handleOpenFolder(filePath)}
+        >
+          {getLastDirectory(filePath)}
+        </Tag>
       )
     },
     { 
       title: '关联服饰', 
       dataIndex: 'skuIds', 
       key: 'skuIds',
+      width: 300,
       render: (skuIds: number[]) => (
         <div style={{ 
           maxWidth: '100%', 
@@ -85,7 +163,7 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
                     wordBreak: 'break-word'
                   }}
                 >
-                  【{sku.brand}】{sku.name}（{sku.type}）
+                  [{sku.id}]【{sku.brand}】{sku.name}（{sku.type}）
                 </Tag>
               ) : null;
             })}
@@ -96,24 +174,33 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
     {
       title: '操作',
       key: 'action',
-      width: 80,
+      width: 160,
       fixed: 'right' as const,
       render: (_: any, record: VideoMaterial) => (
-        <Popconfirm
-          title="确定删除吗？"
-          description="删除后无法恢复"
-          onConfirm={() => handleDelete(record.id as number)}
-          okText="确定"
-          cancelText="取消"
-        >
+        <Space>
           <Button 
             type="link" 
-            danger 
-            icon={<DeleteOutlined />}
+            icon={<EditOutlined />}
+            onClick={() => onEdit(record)}
           >
-            删除
+            查看
           </Button>
-        </Popconfirm>
+          <Popconfirm
+            title="确定删除吗？"
+            description="删除后无法恢复"
+            onConfirm={() => handleDelete(record.id as number)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Button 
+              type="link" 
+              danger 
+              icon={<DeleteOutlined />}
+            >
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     }
   ];
@@ -121,11 +208,37 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
   return (
     <Table 
       sticky={true}
-      scroll={{ x: 1000 }}
+      scroll={{ x: 1200 }}
       rowKey="id" 
       columns={columns} 
-      dataSource={dataSource} 
-      style={{ marginTop: 16 }} 
+      dataSource={filteredData}
+      style={{ marginTop: 16 }}
+      title={() => (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px'
+        }}>
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            flex: 1
+          }}>
+            <span style={{ fontSize: '16px', fontWeight: 500, whiteSpace: 'nowrap' }}>素材列表</span>
+            <Input
+              placeholder="搜索名字、文件夹路径、关联服饰的ID、品牌、名字、类型"
+              prefix={<SearchOutlined style={{ color: '#999' }} />}
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              style={{ maxWidth: '400px' }}
+              allowClear
+            />
+          </div>
+        </div>
+      )}
     />
   );
 };

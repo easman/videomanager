@@ -23,6 +23,7 @@ export interface VideoMaterial {
   filePath: string; // 本地路径
   skuIds: number[]; // 关联服饰
   modifiedTimes: string[]; // 修改时间列表，第一个是创建时间
+  extraInfo: string; // 额外信息
 }
 
 export interface FinalVideo {
@@ -111,6 +112,22 @@ class VideoManagerDB extends Dexie {
           });
         }
       }
+    });
+
+    // 添加版本10，增加 videoMaterials 的 extraInfo 字段
+    this.version(10).stores({
+      skus: '++id, name, type, brand, color, returned',
+      videoMaterials: '++id, name, filePath',
+      finalVideos: '++id, name, publishStatus, videoPath',
+    }).upgrade(async (trans: Transaction) => {
+      const materialTable = trans.table('videoMaterials');
+      
+      // 为所有记录添加 extraInfo 字段
+      await materialTable.toCollection().modify(material => {
+        if (!material.extraInfo) {
+          material.extraInfo = '';
+        }
+      });
     });
   }
 }

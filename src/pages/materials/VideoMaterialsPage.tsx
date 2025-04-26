@@ -10,6 +10,8 @@ const VideoMaterialsPage: React.FC = () => {
   const [skus, setSkus] = useState<Sku[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [currentMaterial, setCurrentMaterial] = useState<VideoMaterial | undefined>();
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   useEffect(() => {
     fetchData();
@@ -20,23 +22,33 @@ const VideoMaterialsPage: React.FC = () => {
       db.videoMaterials.toArray(),
       db.skus.toArray()
     ]);
-    setMaterials(allMaterials);
+    setMaterials(allMaterials.reverse());
     setSkus(allSkus);
   };
 
-  const handleAdd = async (values: Omit<VideoMaterial, 'id' | 'modifiedTimes'>) => {
+  const handleSubmit = async (values: Omit<VideoMaterial, 'id' | 'modifiedTimes'>) => {
     setSubmitting(true);
     try {
-      await db.videoMaterials.add({
-        ...values,
-        modifiedTimes: [new Date().toISOString()]
-      });
+      if (formMode === 'edit' && currentMaterial?.id) {
+        // 编辑模式
+        await db.videoMaterials.update(currentMaterial.id, {
+          ...values,
+          modifiedTimes: [...(currentMaterial.modifiedTimes || []), new Date().toISOString()]
+        });
+        message.success('更新成功');
+      } else {
+        // 新增模式
+        await db.videoMaterials.add({
+          ...values,
+          modifiedTimes: [new Date().toISOString()]
+        });
+        message.success('添加成功');
+      }
       
-      message.success('添加成功');
       setModalVisible(false);
       fetchData();
     } catch (error) {
-      message.error('添加失败：' + (error as Error).message);
+      message.error((formMode === 'edit' ? '更新' : '添加') + '失败：' + (error as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -52,9 +64,21 @@ const VideoMaterialsPage: React.FC = () => {
     }
   };
 
+  const handleEdit = (record: VideoMaterial) => {
+    setCurrentMaterial(record);
+    setFormMode('edit');
+    setModalVisible(true);
+  };
+
+  const handleAdd = () => {
+    setCurrentMaterial(undefined);
+    setFormMode('create');
+    setModalVisible(true);
+  };
+
   return (
     <div>
-      <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalVisible(true)}>
+      <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
         添加素材
       </Button>
 
@@ -62,14 +86,17 @@ const VideoMaterialsPage: React.FC = () => {
         dataSource={materials}
         skus={skus}
         onDelete={handleDelete}
+        onEdit={handleEdit}
       />
 
       <VideoMaterialsForm
         modalVisible={modalVisible}
         setModalVisible={setModalVisible}
-        onSubmit={handleAdd}
+        onSubmit={handleSubmit}
         submitting={submitting}
         skus={skus}
+        initialData={currentMaterial}
+        mode={formMode}
       />
     </div>
   );

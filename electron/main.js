@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -309,6 +309,20 @@ ipcMain.handle('importData', async () => {
   } catch (error) {
     console.error('导入数据失败:', error);
     return { success: false, message: error.message };
+  }
+});
+
+// 添加打开文件夹的处理函数
+ipcMain.handle('open-folder', async (event, folderPath) => {
+  try {
+    await shell.openPath(folderPath);
+    return { success: true };
+  } catch (error) {
+    console.error('打开文件夹失败:', error);
+    return { 
+      success: false, 
+      message: error.message 
+    };
   }
 });
 

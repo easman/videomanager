@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Modal, Form, Input, Select, Button, Space } from 'antd';
-import { FolderOutlined, SwapOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Modal, Form, Input, Select, Button, Space, Tag, message } from 'antd';
+import { FolderOutlined, SwapOutlined, CloseOutlined } from '@ant-design/icons';
 import { VideoMaterial, Sku } from '../../db';
 import { getLastDirectory } from '../../utils/path';
 
 const { Option } = Select;
+const { TextArea } = Input;
 
 interface VideoMaterialFormProps {
   modalVisible: boolean;
@@ -12,11 +13,14 @@ interface VideoMaterialFormProps {
   onSubmit: (values: Omit<VideoMaterial, 'id' | 'modifiedTimes'>) => Promise<void>;
   submitting: boolean;
   skus: Sku[];
+  initialData?: VideoMaterial;
+  mode?: 'create' | 'edit';
 }
 
 interface VideoMaterialFormValues {
   name: string;
   skuIds: number[];
+  extraInfo: string;
 }
 
 const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
@@ -24,18 +28,46 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
   setModalVisible,
   onSubmit,
   submitting,
-  skus
+  skus,
+  initialData,
+  mode = 'create'
 }) => {
   const [form] = Form.useForm<VideoMaterialFormValues>();
   const [filePath, setFilePath] = useState('');
   const [customName, setCustomName] = useState('');
   const [usingFolderName, setUsingFolderName] = useState(true);
+  const [selectedSkus, setSelectedSkus] = useState<number[]>([]);
 
-  const resetForm = () => {
-    setFilePath('');
-    setCustomName('');
-    setUsingFolderName(true);
-    form.resetFields();
+  // 初始化表单数据
+  useEffect(() => {
+    if (modalVisible) {
+      if (mode === 'edit' && initialData) {
+        // 编辑模式：设置初始值
+        setFilePath(initialData.filePath);
+        setCustomName(initialData.name);
+        setUsingFolderName(initialData.name === getLastDirectory(initialData.filePath));
+        setSelectedSkus(initialData.skuIds || []);
+        
+        // 使用 setTimeout 确保在下一个事件循环中设置表单值
+        setTimeout(() => {
+          form.setFieldsValue({
+            name: initialData.name,
+            skuIds: initialData.skuIds || [],
+            extraInfo: initialData.extraInfo || ''
+          });
+        }, 0);
+      } else {
+        // 新建模式：重置表单
+        form.resetFields();
+        setFilePath('');
+        setCustomName('');
+        setUsingFolderName(true);
+        setSelectedSkus([]);
+      }
+    }
+  }, [modalVisible, initialData, mode, form]);
+
+  const handleCancel = () => {
     setModalVisible(false);
   };
 
@@ -90,8 +122,32 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
     await onSubmit({
       name: values.name.trim(),
       filePath,
-      skuIds: values.skuIds || []
+      skuIds: values.skuIds || [],
+      extraInfo: values.extraInfo || ''
     });
+  };
+
+  const handleSkuChange = (value: number[]) => {
+    setSelectedSkus(value);
+    form.setFieldsValue({ skuIds: value });
+  };
+
+  const handleRemoveSku = (skuId: number) => {
+    const newSkuIds = selectedSkus.filter(id => id !== skuId);
+    setSelectedSkus(newSkuIds);
+    form.setFieldsValue({ skuIds: newSkuIds });
+  };
+
+  const handleOpenFolder = async () => {
+    if (!filePath) return;
+    try {
+      const result = await window.electronAPI.openFolder(filePath);
+      if (!result.success) {
+        message.error('打开文件夹失败：' + result.message);
+      }
+    } catch (error) {
+      console.error('打开文件夹失败：', error);
+    }
   };
 
   const renderNameLabel = () => {
@@ -114,23 +170,54 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
     );
   };
 
+  const renderSelectedSkus = () => {
+    if (!selectedSkus.length) return null;
+
+    return (
+      <div style={{ marginTop: 8 }}>
+        <Space size={[0, 8]} wrap>
+          {selectedSkus.map(skuId => {
+            const sku = skus.find(s => s.id === skuId);
+            if (!sku) return null;
+            return (
+              <Tag 
+                key={skuId}
+                closable
+                onClose={() => handleRemoveSku(skuId)}
+                style={{ marginRight: 8, marginBottom: 8 }}
+              >
+                [{sku.id}]【{sku.brand}】{sku.name}（{sku.type}）
+              </Tag>
+            );
+          })}
+        </Space>
+      </div>
+    );
+  };
+
   return (
     <Modal
       maskClosable={false}
-      title="添加视频素材"
+      title={mode === 'create' ? "添加视频素材" : "编辑视频素材"}
       open={modalVisible}
-      onCancel={resetForm}
+      onCancel={handleCancel}
       onOk={() => form.submit()}
       cancelText="取消"
       okText="提交"
       confirmLoading={submitting}
       width={600}
+      forceRender
     >
       <Form<VideoMaterialFormValues>
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
         preserve={false}
+        initialValues={{
+          name: initialData?.name || '',
+          skuIds: initialData?.skuIds || [],
+          extraInfo: initialData?.extraInfo || ''
+        }}
       >
         <Form.Item label="文件夹路径" required>
           <Space.Compact style={{ width: '100%' }}>
@@ -138,8 +225,13 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
               value={filePath}
               placeholder="请选择文件夹路径"
               readOnly
+              style={{ cursor: filePath ? 'pointer' : 'default' }}
+              onClick={handleOpenFolder}
             />
-            <Button icon={<FolderOutlined />} onClick={handleFolderSelect} />
+            <Button 
+              icon={<FolderOutlined />} 
+              onClick={handleFolderSelect}
+              />
           </Space.Compact>
         </Form.Item>
 
@@ -158,18 +250,28 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
           )}
         </Form.Item>
 
-        <Form.Item name="skuIds" label="关联服饰" initialValue={[]}>
+        <Form.Item
+          label={
+            <div style={{ marginBottom: selectedSkus.length ? 0 : 8 }}>
+              关联服饰
+              {renderSelectedSkus()}
+            </div>
+          }
+          name="skuIds"
+        >
           <Select
             mode="multiple"
             placeholder="请选择关联服饰"
             style={{ width: '100%' }}
             optionFilterProp="children"
             showSearch
+            value={selectedSkus}
+            onChange={handleSkuChange}
             filterOption={(input, option) => {
               const text = String(option?.children);
               return text.toLowerCase().includes(input.toLowerCase());
             }}
-            maxTagCount="responsive"  
+            maxTagCount={0}
           >
             {skus.map(sku => (
               <Option key={sku.id} value={sku.id}>
@@ -177,6 +279,16 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
               </Option>
             ))}
           </Select>
+        </Form.Item>
+
+        <Form.Item
+          name="extraInfo"
+          label="额外信息"
+        >
+          <TextArea
+            placeholder="请输入额外信息"
+            autoSize={{ minRows: 3, maxRows: 6 }}
+          />
         </Form.Item>
       </Form>
     </Modal>
