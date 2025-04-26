@@ -6,6 +6,12 @@ const crypto = require('crypto');
 // 判断是否是开发环境
 const isDev = !app.isPackaged;
 
+// 添加日志
+console.log('App starting...');
+console.log('Is Dev:', isDev);
+console.log('App path:', app.getAppPath());
+console.log('User Data path:', app.getPath('userData'));
+
 // 应用的图片缓存目录
 const getImagesDir = () => {
   const userDataPath = app.getPath('userData');
@@ -21,6 +27,8 @@ const getImagesDir = () => {
 };
 
 function createWindow () {
+  console.log('Creating window...');
+  
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -35,20 +43,35 @@ function createWindow () {
   // 开发环境下打开开发者工具
   if (isDev) {
     win.webContents.openDevTools();
+  } else {
+    // 在生产环境中也打开开发者工具以便调试
+    win.webContents.openDevTools();
   }
 
   // 加载应用
   if (isDev) {
+    console.log('Loading development URL...');
     win.loadURL('http://localhost:5173');
   } else {
     const indexPath = path.join(__dirname, '../dist/index.html');
+    console.log('Loading production path:', indexPath);
+    console.log('File exists:', fs.existsSync(indexPath));
+    
     if (fs.existsSync(indexPath)) {
       win.loadFile(indexPath);
     } else {
       console.error('错误：找不到打包后的 index.html 文件！');
+      console.log('Current directory:', __dirname);
+      console.log('Available files in dist:', fs.existsSync(path.join(__dirname, '../dist')) ? 
+        fs.readdirSync(path.join(__dirname, '../dist')) : 'dist directory not found');
       win.loadFile(path.join(__dirname, 'error.html'));
     }
   }
+
+  // 监听加载错误
+  win.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Page failed to load:', errorCode, errorDescription);
+  });
 
   return win;
 }

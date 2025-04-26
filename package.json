@@ -6,7 +6,8 @@
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build",
     "electron:dev": "electron .",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "pack:mac": "npm run build && electron-builder --mac"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@types/react": "^18.2.14",
     "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.4.1",
     "concurrently": "^9.1.2",
     "electron": "^35.2.1",
     "electron-builder": "^26.0.12",
@@ -35,11 +37,37 @@
       "dist",
       "electron"
     ],
+    "directories": {
+      "output": "release"
+    },
     "mac": {
       "target": [
         "dmg",
         "zip"
-      ]
+      ],
+      "category": "public.app-category.video",
+      "darkModeSupport": true,
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 400
+      }
     }
   }
 }
