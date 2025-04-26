@@ -10,5 +10,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   clearDirectory: (dirPath) => ipcRenderer.invoke('clear-directory', dirPath),
   // 添加开发者工具相关 API
   isDevToolsEnabled: () => ipcRenderer.invoke('isDevToolsEnabled'),
-  toggleDevTools: (enabled) => ipcRenderer.invoke('toggleDevTools', enabled)
+  toggleDevTools: (enabled) => ipcRenderer.invoke('toggleDevTools', enabled),
+  // 添加数据导入导出相关 API
+  exportData: (dbData) => ipcRenderer.invoke('exportData', dbData),
+  importData: () => ipcRenderer.invoke('importData'),
 }); 

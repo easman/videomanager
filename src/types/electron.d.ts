@@ -8,6 +8,9 @@ interface ElectronAPI {
   // 开发者工具相关 API
   isDevToolsEnabled: () => Promise<boolean>;
   toggleDevTools: (enabled: boolean) => Promise<boolean>;
+  // 数据导入导出相关 API
+  exportData: (dbData: string) => Promise<{ success: boolean; message?: string }>;
+  importData: () => Promise<{ success: boolean; dbData?: string; message?: string }>;
 }
 
 declare interface Window {

@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Space, Modal, message, Switch } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { db } from '../../db';
+import { exportDB, importDB } from 'dexie-export-import';
 
 const { confirm } = Modal;
 
 const SettingsPage: React.FC = () => {
   const [devToolsEnabled, setDevToolsEnabled] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   // 获取开发者工具状态
   useEffect(() => {
@@ -61,6 +64,73 @@ const SettingsPage: React.FC = () => {
     });
   };
 
+  const handleExportData = async () => {
+    try {
+      setIsExporting(true);
+      // 导出数据库数据
+      const blob = await exportDB(db);
+      const exportData = await blob.text();
+      
+      // 发送到主进程进行保存
+      const result = await window.electronAPI.exportData(exportData);
+      
+      if (result.success) {
+        message.success('数据导出成功');
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error) {
+      message.error('导出数据失败：' + (error as Error).message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportData = async () => {
+    try {
+      setIsImporting(true);
+      
+      // 确认导入
+      confirm({
+        title: '确认导入数据？',
+        icon: <ExclamationCircleOutlined />,
+        content: '此操作将覆盖当前所有数据，请确保已备份重要数据。',
+        okText: '确认导入',
+        okType: 'danger',
+        cancelText: '取消',
+        async onOk() {
+          try {
+            // 从主进程获取导入数据
+            const result = await window.electronAPI.importData();
+            
+            if (!result.success || !result.dbData) {
+              throw new Error(result.message || '导入失败');
+            }
+            
+            // 清空现有数据
+            await Promise.all([
+              db.skus.clear(),
+              db.videoMaterials.clear(),
+              db.finalVideos.clear(),
+            ]);
+            
+            // 导入新数据
+            const blob = new Blob([result.dbData], { type: 'application/json' });
+            await importDB(blob);
+            
+            message.success('数据导入成功');
+          } catch (error) {
+            message.error('导入数据失败：' + (error as Error).message);
+          }
+        },
+      });
+    } catch (error) {
+      message.error('导入数据失败：' + (error as Error).message);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div>
       <h2 style={{ marginBottom: 24 }}>系统设置</h2>
@@ -78,20 +148,20 @@ const SettingsPage: React.FC = () => {
             </div>
             
             <div>
-              <Button disabled>
+              <Button onClick={handleExportData} loading={isExporting}>
                 导出数据
               </Button>
               <span style={{ marginLeft: 8, color: '#999' }}>
-                导出所有数据为备份文件（暂未实现）
+                导出所有数据为备份文件
               </span>
             </div>
             
             <div>
-              <Button disabled>
+              <Button onClick={handleImportData} loading={isImporting}>
                 导入数据
               </Button>
               <span style={{ marginLeft: 8, color: '#999' }}>
-                从备份文件导入数据（暂未实现）
+                从备份文件导入数据
               </span>
             </div>
           </Space>

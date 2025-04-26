@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const archiver = require('archiver');
+const extract = require('extract-zip');
 
 // 判断是否是开发环境
 const isDev = !app.isPackaged;
@@ -216,6 +218,97 @@ ipcMain.handle('toggleDevTools', (_, enabled) => {
   } catch (error) {
     console.error('切换开发者工具失败:', error);
     return false;
+  }
+});
+
+// 数据导入导出相关处理
+ipcMain.handle('exportData', async (event, dbData) => {
+  try {
+    const result = await dialog.showSaveDialog({
+      title: '导出数据',
+      defaultPath: 'backup.vmd',
+      filters: [{ name: '视频管理器数据', extensions: ['vmd'] }]
+    });
+
+    if (result.canceled) {
+      return { success: false, message: '操作已取消' };
+    }
+
+    const backupPath = result.filePath;
+    const imagesDir = getImagesDir();
+    
+    // 创建临时目录
+    const tempDir = path.join(app.getPath('temp'), 'vmd-backup-' + Date.now());
+    fs.mkdirSync(tempDir, { recursive: true });
+    
+    // 保存数据库数据
+    fs.writeFileSync(path.join(tempDir, 'db.json'), dbData);
+    
+    // 复制图片文件
+    const imagesBackupDir = path.join(tempDir, 'images');
+    fs.mkdirSync(imagesBackupDir, { recursive: true });
+    if (fs.existsSync(imagesDir)) {
+      fs.cpSync(imagesDir, imagesBackupDir, { recursive: true });
+    }
+    
+    // 创建压缩文件
+    const output = fs.createWriteStream(backupPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    
+    output.on('close', () => {
+      // 清理临时目录
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    });
+    
+    archive.pipe(output);
+    archive.directory(tempDir, false);
+    await archive.finalize();
+    
+    return { success: true };
+  } catch (error) {
+    console.error('导出数据失败:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+ipcMain.handle('importData', async () => {
+  try {
+    const result = await dialog.showOpenDialog({
+      title: '导入数据',
+      filters: [{ name: '视频管理器数据', extensions: ['vmd'] }],
+      properties: ['openFile']
+    });
+
+    if (result.canceled) {
+      return { success: false, message: '操作已取消' };
+    }
+
+    const backupPath = result.filePaths[0];
+    const tempDir = path.join(app.getPath('temp'), 'vmd-restore-' + Date.now());
+    
+    // 解压文件
+    await extract(backupPath, { dir: tempDir });
+    
+    // 读取数据库数据
+    const dbData = fs.readFileSync(path.join(tempDir, 'db.json'), 'utf-8');
+    
+    // 替换图片目录
+    const imagesDir = getImagesDir();
+    const imagesBackupDir = path.join(tempDir, 'images');
+    if (fs.existsSync(imagesDir)) {
+      fs.rmSync(imagesDir, { recursive: true, force: true });
+    }
+    if (fs.existsSync(imagesBackupDir)) {
+      fs.cpSync(imagesBackupDir, imagesDir, { recursive: true });
+    }
+    
+    // 清理临时目录
+    fs.rmSync(tempDir, { recursive: true, force: true });
+    
+    return { success: true, dbData };
+  } catch (error) {
+    console.error('导入数据失败:', error);
+    return { success: false, message: error.message };
   }
 });
 
