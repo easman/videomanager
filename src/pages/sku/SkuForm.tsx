@@ -132,7 +132,6 @@ const SkuForm: React.FC<SkuFormProps> = ({
       if (trimValues.color) trimValues.color = String(trimValues.color).trim();
       if (trimValues.buyPlatform) trimValues.buyPlatform = String(trimValues.buyPlatform).trim();
       if (trimValues.sizeInfo) trimValues.sizeInfo = String(trimValues.sizeInfo).trim();
-      if (trimValues.extraInfo) trimValues.extraInfo = String(trimValues.extraInfo).trim();
 
       // 必要字段验证
       if (!trimValues.name) {
