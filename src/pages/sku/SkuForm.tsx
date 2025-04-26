@@ -174,6 +174,7 @@ const SkuForm: React.FC<SkuFormProps> = ({
 
   return (
     <Modal
+      maskClosable={false}
       title="添加服饰"
       open={modalVisible}
       onCancel={() => {

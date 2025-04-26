@@ -28,7 +28,7 @@ export interface FinalVideo {
   description: string;
   materialIds: number[]; // 关联素材
   videoPath: string; // 最终视频文件路径
-  publishStatus: '未发布' | '已发布' | '定时发布';
+  publishStatus: '待编辑' | '编辑中' | '已发布';
   publishTime?: string;
   extraInfo: string; // 额外信息
   modifiedTimes: string[]; // 修改时间列表，第一个是创建时间

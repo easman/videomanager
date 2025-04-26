@@ -3,7 +3,7 @@ import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Tag, Sp
 import { PlusOutlined, FolderOutlined, SwapOutlined } from '@ant-design/icons';
 import { db, FinalVideo, Sku, VideoMaterial } from '../db';
 import dayjs from 'dayjs';
-import { getFileName, getLastDirectory, getFileNameWithoutExtension } from '../utils/path';
+import { getLastDirectory, getFileNameWithoutExtension } from '../utils/path';
 import { useForm } from 'antd/es/form/Form';
 
 const { Option } = Select;
@@ -104,34 +104,18 @@ const FinalVideosPage: React.FC = () => {
     form.resetFields();
   };
 
-  const handleDelete = async (id: number) => {
-    try {
-      await db.finalVideos.delete(id);
-      message.success('删除成功');
-      fetchData();
-    } catch (error) {
-      message.error('删除失败');
-      console.error(error);
-    }
-  };
-
   interface AddVideoFormValues {
-    name: string;
+    name: string; 
     description?: string;
     materialIds: number[];
     videoPath: string;
-    publishStatus: '定时发布' | '未发布' | '已发布';
+    publishStatus:  '待编辑' | '编辑中' | '已发布';
     publishTime?: string;
     extraInfo?: string;
   }
 
   const handleAdd = async (values: AddVideoFormValues) => {
     try {
-      if (values.publishStatus === '定时发布' && !values.publishTime) {
-        message.error('请选择发布时间');
-        return;
-      }
-
       if (!values.materialIds || values.materialIds.length === 0) {
         message.error('请选择关联素材');
         return;
@@ -286,6 +270,7 @@ const FinalVideosPage: React.FC = () => {
       </Button>
       <Table sticky={true} rowKey="id" columns={columns} dataSource={finalVideos} style={{ marginTop: 16 }} />
       <Modal
+        maskClosable={false}
         title="添加成品视频"
         open={isModalVisible}
         onCancel={resetModal}
@@ -339,6 +324,14 @@ const FinalVideosPage: React.FC = () => {
               placeholder="请选择素材"
               onChange={handleMaterialsChange}
               style={{ width: '100%' }}
+              showSearch
+              filterOption={(input, option) => {
+                if (!option?.children) return false;
+                return String(option.children)
+                  .toLowerCase()
+                  .includes(input.toLowerCase());
+              }}
+              maxTagCount="responsive"
             >
               {materials.map(material => (
                 <Option key={material.id} value={material.id}>
@@ -372,11 +365,21 @@ const FinalVideosPage: React.FC = () => {
             name="publishStatus" 
             label="发布状态" 
             rules={[{ required: true, message: '请选择发布状态' }]}
+            initialValue="待编辑"
           >
-            <Select>
-              <Option value="未发布">未发布</Option>
+            <Select
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) => {
+                if (!option?.children) return false;
+                return String(option.children)
+                  .toLowerCase()
+                  .includes(input.toLowerCase());
+              }}
+            >
+              <Option value="待编辑">待编辑</Option>
+              <Option value="编辑中">编辑中</Option>
               <Option value="已发布">已发布</Option>
-              <Option value="定时发布">定时发布</Option>
             </Select>
           </Form.Item>
 
@@ -388,7 +391,7 @@ const FinalVideosPage: React.FC = () => {
           >
             {({ getFieldValue }) => {
               const publishStatus = getFieldValue('publishStatus');
-              return (publishStatus === '定时发布' || publishStatus === '已发布') && (
+              return publishStatus === '已发布' && (
                 <Form.Item 
                   name="publishTime" 
                   label="发布时间"
@@ -397,7 +400,6 @@ const FinalVideosPage: React.FC = () => {
                   <DatePicker 
                     showTime 
                     style={{ width: '100%' }}
-                    disabledDate={current => current && current < dayjs().startOf('day')}
                   />
                 </Form.Item>
               );

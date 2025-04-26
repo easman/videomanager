@@ -177,6 +177,7 @@ const VideoMaterialsPage: React.FC = () => {
       />
 
       <Modal
+        maskClosable={false}
         title="添加视频素材"
         open={modalVisible}
         onCancel={resetModal}
@@ -223,6 +224,12 @@ const VideoMaterialsPage: React.FC = () => {
               placeholder="请选择关联服饰"
               style={{ width: '100%' }}
               optionFilterProp="children"
+              showSearch
+              filterOption={(input, option) => {
+                const text = String(option?.children);
+                return text.toLowerCase().includes(input.toLowerCase());
+              }}
+              maxTagCount="responsive"  
             >
               {skus.map(sku => (
                 <Option key={sku.id} value={sku.id}>
