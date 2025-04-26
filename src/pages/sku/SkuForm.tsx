@@ -205,11 +205,6 @@ const SkuForm: React.FC<SkuFormProps> = ({
           name="name"
           label="名字"
           rules={[{ required: true, message: '请输入服饰名字' }]}
-          getValueFromEvent={e => {
-            if (typeof e === 'string') return e.trim();
-            if (e && e.target) return e.target.value.trim();
-            return e;
-          }}
         >
           <Input />
         </Form.Item>
@@ -227,11 +222,6 @@ const SkuForm: React.FC<SkuFormProps> = ({
           name="type"
           label="类型"
           rules={[{ required: true, message: '请输入类型' }]}
-          getValueFromEvent={value => {
-            if (typeof value === 'string') return value.trim();
-            if (value && value.target) return value.target.value.trim();
-            return value;
-          }}
         >
           <AutoComplete
             options={typeOptions}
@@ -246,11 +236,6 @@ const SkuForm: React.FC<SkuFormProps> = ({
           name="color"
           label="颜色"
           rules={[{ required: true, message: '请输入颜色' }]}
-          getValueFromEvent={value => {
-            if (typeof value === 'string') return value.trim();
-            if (value && value.target) return value.target.value.trim();
-            return value;
-          }}
         >
           <AutoComplete
             options={colorOptions}
@@ -265,11 +250,6 @@ const SkuForm: React.FC<SkuFormProps> = ({
           name="brand"
           label="品牌"
           rules={[{ required: true, message: '请输入品牌' }]}
-          getValueFromEvent={value => {
-            if (typeof value === 'string') return value.trim();
-            if (value && value.target) return value.target.value.trim();
-            return value;
-          }}
         >
           <AutoComplete
             options={brandOptions}
@@ -288,11 +268,6 @@ const SkuForm: React.FC<SkuFormProps> = ({
           name="buyPlatform"
           label="购入平台"
           rules={[{ required: true, message: '请输入购入平台' }]}
-          getValueFromEvent={value => {
-            if (typeof value === 'string') return value.trim();
-            if (value && value.target) return value.target.value.trim();
-            return value;
-          }}
         >
           <AutoComplete
             options={platformOptions}
@@ -315,11 +290,6 @@ const SkuForm: React.FC<SkuFormProps> = ({
         <Form.Item
           name="sizeInfo"
           label="尺码信息"
-          getValueFromEvent={e => {
-            if (typeof e === 'string') return e.trim();
-            if (e && e.target) return e.target.value.trim();
-            return e;
-          }}
         >
           <Input />
         </Form.Item>
@@ -327,11 +297,6 @@ const SkuForm: React.FC<SkuFormProps> = ({
         <Form.Item
           name="extraInfo"
           label="额外信息"
-          getValueFromEvent={e => {
-            if (typeof e === 'string') return e.trim();
-            if (e && e.target) return e.target.value.trim();
-            return e;
-          }}
         >
           <Input.TextArea />
         </Form.Item>

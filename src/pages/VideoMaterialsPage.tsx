@@ -287,7 +287,6 @@ const VideoMaterialsPage: React.FC = () => {
                 name="name"
                 label={renderNameLabel()}
                 rules={[{ required: true, message: '请输入素材名字' }]}
-                getValueFromEvent={e => e.target.value.trim()}
               >
                 <Input 
                   placeholder="请输入素材名字" 

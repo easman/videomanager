@@ -337,7 +337,6 @@ const FinalVideosPage: React.FC = () => {
                 name="name" 
                 label={renderNameLabel()} 
                 rules={[{ required: true, message: '请输入视频名字' }]}
-                getValueFromEvent={e => e.target.value.trim()}
               >
                 <Input 
                   placeholder="请输入视频名字" 
@@ -350,7 +349,6 @@ const FinalVideosPage: React.FC = () => {
           <Form.Item 
             name="description" 
             label="描述"
-            getValueFromEvent={e => e.target.value.trim()}
           >
             <Input.TextArea />
           </Form.Item>
@@ -397,7 +395,6 @@ const FinalVideosPage: React.FC = () => {
           <Form.Item 
             name="extraInfo" 
             label="额外信息"
-            getValueFromEvent={e => e.target.value.trim()}
           >
             <Input.TextArea />
           </Form.Item>
