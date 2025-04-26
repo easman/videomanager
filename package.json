@@ -49,7 +49,8 @@
       "darkModeSupport": true,
       "icon": "build/icon.icns",
       "hardenedRuntime": true,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "identity": "VideoManager Developer"
     },
     "dmg": {
       "contents": [

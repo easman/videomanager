@@ -3,9 +3,9 @@ import { Layout, Menu } from 'antd';
 import { HashRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { SettingOutlined } from '@ant-design/icons';
 import SkuPage from './pages/sku/SkuPage';
-import VideoMaterialsPage from './pages/VideoMaterialsPage';
-import FinalVideosPage from './pages/FinalVideosPage';
-import SettingsPage from './pages/SettingsPage';
+import VideoMaterialsPage from './pages/materials/VideoMaterialsPage';
+import FinalVideosPage from './pages/videos/FinalVideosPage';
+import SettingsPage from './pages/settings/SettingsPage';
 
 const { Header, Content } = Layout;
 

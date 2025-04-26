@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, Button, Space, Modal, message } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
-import { db } from '../db';
+import { db } from '../../db';
 
 const { confirm } = Modal;
 
