@@ -16,8 +16,16 @@ const SkuPage: React.FC = () => {
   const [colorOptions, setColorOptions] = useState<{ value: string }[]>([]);
   const [currentSku, setCurrentSku] = useState<Sku | undefined>();
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-  // 添加缓存引用
-  const imageCache = useRef<Map<string, string>>(new Map());
+  const [imagesDir, setImagesDir] = useState<string>('');
+
+  // 获取图片目录
+  useEffect(() => {
+    const getImagesDir = async () => {
+      const dir = await window.electronAPI.getAppImagesDir();
+      setImagesDir(dir);
+    };
+    getImagesDir();
+  }, []);
 
   const fetchClothes = async () => {
     try {
@@ -26,7 +34,7 @@ const SkuPage: React.FC = () => {
       // 预处理所有图片路径
       const processedClothes = all.map(item => ({
         ...item,
-        image: item.image ? (imageCache.current.get(item.image) || item.image) : ''
+        image: item.image ? `${imagesDir}/${item.image}` : ''
       })).reverse();
       
       setClothes(processedClothes);
@@ -48,12 +56,10 @@ const SkuPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchClothes();
-    return () => {
-      // 清理图片缓存
-      imageCache.current.clear();
-    };
-  }, []);
+    if (imagesDir) {
+      fetchClothes();
+    }
+  }, [imagesDir]);
 
   const handleSubmit = async (values: Omit<Sku, 'id'>, id?: number) => {
     try {
@@ -62,16 +68,17 @@ const SkuPage: React.FC = () => {
       // 处理图片保存
       let finalImagePath = '';
       if (values.image) {
-        // 如果是编辑模式且图片路径没有改变，直接使用原路径
+        // 如果是编辑模式且图片路径没有改变，直接使用原文件名
         if (id && values.image === currentSku?.image) {
-          finalImagePath = values.image;
+          finalImagePath = values.image.split('/').pop() || values.image.split('\\').pop() || values.image;
         } else {
           const saveResult = await window.electronAPI.saveImage(values.image);
           if (!saveResult.success) {
             message.error(`图片保存失败: ${saveResult.message}`);
             return;
           }
-          finalImagePath = saveResult.path;
+          // 只保存文件名
+          finalImagePath = saveResult.path.split('/').pop() || saveResult.path.split('\\').pop() || saveResult.path;
         }
       }
 
@@ -101,7 +108,11 @@ const SkuPage: React.FC = () => {
   };
 
   const handleEdit = (record: Sku) => {
-    setCurrentSku(record);
+    // 编辑时传入完整路径
+    setCurrentSku({
+      ...record,
+      image: record.image ? `${imagesDir}/${record.image.split('/').pop() || record.image.split('\\').pop() || record.image}` : ''
+    });
     setFormMode('edit');
     setModalVisible(true);
   };

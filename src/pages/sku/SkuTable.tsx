@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Button, Popconfirm, message, Modal, Space, Image } from 'antd';
 import { PictureOutlined, DeleteOutlined, SwapOutlined, EditOutlined } from '@ant-design/icons';
 import { Sku } from '../../db';

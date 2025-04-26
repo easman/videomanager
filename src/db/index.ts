@@ -89,6 +89,29 @@ class VideoManagerDB extends Dexie {
         }
       });
     });
+
+    // 添加版本9，将图片路径转换为文件名
+    this.version(9).stores({
+      skus: '++id, name, type, brand, color, returned',
+      videoMaterials: '++id, name, filePath',
+      finalVideos: '++id, name, publishStatus, videoPath',
+    }).upgrade(async (trans: Transaction) => {
+      const skuTable = trans.table('skus');
+      
+      // 获取所有记录
+      const allSkus = await skuTable.toArray();
+      
+      // 更新每条记录的图片路径
+      for (const sku of allSkus) {
+        if (sku.image) {
+          // 从完整路径中提取文件名
+          const fileName = sku.image.split('/').pop() || sku.image.split('\\').pop() || sku.image;
+          await skuTable.update(sku.id as number, {
+            image: fileName
+          });
+        }
+      }
+    });
   }
 }
 
