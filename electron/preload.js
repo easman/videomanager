@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppImagesDir: () => ipcRenderer.invoke('get-app-images-dir'),
   clearDirectory: (dirPath) => ipcRenderer.invoke('clear-directory', dirPath),
   openFolder: (folderPath) => ipcRenderer.invoke('open-folder', folderPath),
+  showFileInFolder: (filePath) => ipcRenderer.invoke('show-file-in-folder', filePath),
   // 添加开发者工具相关 API
   isDevToolsEnabled: () => ipcRenderer.invoke('isDevToolsEnabled'),
   toggleDevTools: (enabled) => ipcRenderer.invoke('toggleDevTools', enabled),

@@ -35,7 +35,7 @@ const SettingsPage: React.FC = () => {
     confirm({
       title: '确认清空所有数据？',
       icon: <ExclamationCircleOutlined />,
-      content: '此操作将清空所有服饰、视频素材、成品视频数据以及图片文件，且不可恢复。',
+      content: '此操作将清空所有服饰、视频素材、项目数据以及图片文件，且不可恢复。',
       okText: '确认清空',
       okType: 'danger',
       cancelText: '取消',
@@ -45,7 +45,7 @@ const SettingsPage: React.FC = () => {
           await Promise.all([
             db.skus.clear(),
             db.videoMaterials.clear(),
-            db.finalVideos.clear(),
+            db.projects.clear(),
           ]);
 
           // 清理图片文件
@@ -111,7 +111,7 @@ const SettingsPage: React.FC = () => {
             await Promise.all([
               db.skus.clear(),
               db.videoMaterials.clear(),
-              db.finalVideos.clear(),
+              db.projects.clear(),
             ]);
             
             // 导入新数据
@@ -143,7 +143,7 @@ const SettingsPage: React.FC = () => {
                 清空所有数据
               </Button>
               <span style={{ marginLeft: 8, color: '#999' }}>
-                清空所有服饰、视频素材、成品视频数据以及图片文件
+                清空所有服饰、视频素材、项目视频数据以及图片文件
               </span>
             </div>
             

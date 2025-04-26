@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Table, Button, Tag, Space, Popconfirm, Modal, Input, message } from 'antd';
-import { DeleteOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Space, Popconfirm, Modal, Input, message, Tooltip } from 'antd';
+import { DeleteOutlined, EditOutlined, SearchOutlined, LinkOutlined } from '@ant-design/icons';
 import { VideoMaterial, Sku, db } from '../../db';
-import { getLastDirectory } from '../../utils/path';
+import SkuTags from '../../components/SkuTags';
+import MaterialFolderTag from '../../components/MaterialFolderTag';
 
 interface VideoMaterialsTableProps {
   dataSource: VideoMaterial[];
@@ -18,6 +19,27 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
   onEdit
 }) => {
   const [searchText, setSearchText] = useState('');
+  const [referenceCountMap, setReferenceCountMap] = useState<Record<number, number>>({});
+
+  // 获取引用次数
+  const updateReferenceCounts = async () => {
+    const counts: Record<number, number> = {};
+    const projects = await db.projects.toArray();
+    
+    // 统计每个素材被引用的次数
+    projects.forEach(project => {
+      project.materialIds.forEach(materialId => {
+        counts[materialId] = (counts[materialId] || 0) + 1;
+      });
+    });
+    
+    setReferenceCountMap(counts);
+  };
+
+  // 在组件挂载和数据源更新时获取引用次数
+  React.useEffect(() => {
+    updateReferenceCounts();
+  }, [dataSource]);
 
   const handleOpenFolder = async (folderPath: string) => {
     try {
@@ -88,8 +110,8 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
 
   const handleDelete = async (id: number) => {
     try {
-      // 检查是否有成品视频引用这个素材
-      const referencingVideos = await db.finalVideos
+      // 检查是否有项目视频引用这个素材
+      const referencingVideos = await db.projects
         .filter(video => video.materialIds.includes(id))
         .toArray();
 
@@ -98,7 +120,7 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
           title: '无法删除',
           content: (
             <div>
-              <p>该素材被以下成品视频引用，请先删除相关成品视频：</p>
+              <p>该素材被以下项目引用，请先删除相关项目：</p>
               <ul style={{ maxHeight: '200px', overflow: 'auto' }}>
                 {referencingVideos.map(video => (
                   <li key={video.id}>{video.name}</li>
@@ -138,12 +160,7 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
       key: 'filePath',
       width: 100,
       render: (filePath: string) => (
-        <Tag 
-          style={{ cursor: 'pointer' }}
-          onClick={() => handleOpenFolder(filePath)}
-        >
-          {getLastDirectory(filePath)}
-        </Tag>
+        <MaterialFolderTag filePath={filePath} />
       )
     },
     { 
@@ -152,30 +169,24 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
       key: 'skuIds',
       width: 300,
       render: (skuIds: number[]) => (
-        <div style={{ 
-          maxWidth: '100%', 
-          wordWrap: 'break-word',
-          whiteSpace: 'pre-wrap'
-        }}>
-          <Space wrap size={[0, 8]}>
-            {skuIds?.map(id => {
-              const sku = skus.find(s => s.id === id);
-              return sku ? (
-                <Tag 
-                  key={id}
-                  style={{ 
-                    maxWidth: '100%',
-                    whiteSpace: 'normal',
-                    wordBreak: 'break-word'
-                  }}
-                >
-                  [{sku.id}]【{sku.brand}】{sku.name}（{sku.type}）
-                </Tag>
-              ) : null;
-            })}
-          </Space>
-        </div>
+        <SkuTags skuIds={skuIds} skus={skus} />
       )
+    },
+    {
+      title: '引用次数',
+      key: 'referenceCount',
+      width: 100,
+      render: (_: any, record: VideoMaterial) => {
+        const count = referenceCountMap[record.id as number] || 0;
+        return (
+          <Tooltip>
+            <Space>
+              <LinkOutlined style={{ color: count > 0 ? '#1890ff' : '#d9d9d9' }} />
+              <span>{count}</span>
+            </Space>
+          </Tooltip>
+        );
+      },
     },
     {
       title: '操作',

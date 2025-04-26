@@ -3,6 +3,7 @@ import { Modal, Form, Input, Select, Button, Space, Tag, message } from 'antd';
 import { FolderOutlined, SwapOutlined, CloseOutlined } from '@ant-design/icons';
 import { VideoMaterial, Sku } from '../../db';
 import { getLastDirectory } from '../../utils/path';
+import SkuTags from '../../components/SkuTags';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -175,22 +176,11 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
 
     return (
       <div style={{ marginTop: 8 }}>
-        <Space size={[0, 8]} wrap>
-          {selectedSkus.map(skuId => {
-            const sku = skus.find(s => s.id === skuId);
-            if (!sku) return null;
-            return (
-              <Tag 
-                key={skuId}
-                closable
-                onClose={() => handleRemoveSku(skuId)}
-                style={{ marginRight: 8, marginBottom: 8 }}
-              >
-                [{sku.id}]【{sku.brand}】{sku.name}（{sku.type}）
-              </Tag>
-            );
-          })}
-        </Space>
+        <SkuTags 
+          skuIds={selectedSkus} 
+          skus={skus} 
+          onClose={handleRemoveSku} 
+        />
       </div>
     );
   };

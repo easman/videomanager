@@ -26,13 +26,13 @@ export interface VideoMaterial {
   extraInfo: string; // 额外信息
 }
 
-export interface FinalVideo {
+export interface Project {
   id?: number;  // id 在创建时是可选的，Dexie 会自动生成
   name: string;
   description: string;
   materialIds: number[]; // 关联素材
   videoPath: string; // 最终视频文件路径
-  publishStatus: '待编辑' | '编辑中' | '已发布';
+  publishStatus: '未编辑' | '编辑中' | '待发布' | '已发布';
   publishTime?: string;
   extraInfo: string; // 额外信息
   modifiedTimes: string[]; // 修改时间列表，第一个是创建时间
@@ -41,7 +41,7 @@ export interface FinalVideo {
 class VideoManagerDB extends Dexie {
   skus!: Table<Sku, number>;
   videoMaterials!: Table<VideoMaterial, number>;
-  finalVideos!: Table<FinalVideo, number>;
+  projects!: Table<Project, number>;
 
   constructor() {
     super('VideoManagerDB');
@@ -128,6 +128,36 @@ class VideoManagerDB extends Dexie {
           material.extraInfo = '';
         }
       });
+    });
+
+    // 添加版本11，将 finalVideos 表重命名为 projects
+    this.version(11).stores({
+      skus: '++id, name, type, brand, color, returned',
+      videoMaterials: '++id, name, filePath',
+      projects: '++id, name, publishStatus, videoPath',
+    }).upgrade(async (trans: Transaction) => {
+      // 获取旧表数据
+      const finalVideosTable = trans.table('finalVideos');
+      const projectsTable = trans.table('projects');
+      
+      // 获取所有记录
+      const allFinalVideos = await finalVideosTable.toArray();
+      
+      // 将数据迁移到新表，确保所有必要字段都存在
+      for (const video of allFinalVideos) {
+        await projectsTable.add({
+          ...video,
+          description: video.description || '',
+          materialIds: video.materialIds || [],
+          publishStatus: video.publishStatus || '待编辑',
+          publishTime: video.publishTime,
+          extraInfo: video.extraInfo || '',
+          modifiedTimes: video.modifiedTimes || [new Date().toISOString()]
+        });
+      }
+      
+      // 删除旧表
+      await finalVideosTable.clear();
     });
   }
 }

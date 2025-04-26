@@ -326,6 +326,20 @@ ipcMain.handle('open-folder', async (event, folderPath) => {
   }
 });
 
+// 添加打开并选中文件的处理函数
+ipcMain.handle('show-file-in-folder', async (event, filePath) => {
+  try {
+    await shell.showItemInFolder(filePath);
+    return { success: true };
+  } catch (error) {
+    console.error('打开文件所在文件夹失败:', error);
+    return { 
+      success: false, 
+      message: error.message 
+    };
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
   app.on('activate', function () {

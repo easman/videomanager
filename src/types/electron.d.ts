@@ -6,6 +6,7 @@ interface ElectronAPI {
   getAppImagesDir: () => Promise<string>;
   clearDirectory: (dirPath: string) => Promise<{ success: boolean; message?: string }>;
   openFolder: (folderPath: string) => Promise<{ success: boolean; message?: string }>;
+  showFileInFolder: (filePath: string) => Promise<{ success: boolean; message?: string }>;
   // 开发者工具相关 API
   isDevToolsEnabled: () => Promise<boolean>;
   toggleDevTools: (enabled: boolean) => Promise<boolean>;
