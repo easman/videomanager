@@ -25,6 +25,7 @@ interface ProjectFormValues {
   description?: string;
   materialIds: number[];
   videoPath: string;
+  tags: string;
   publishStatus: '未编辑' | '编辑中' | '待发布' | '已发布';
   publishTime?: string;
   extraInfo?: string;
@@ -53,6 +54,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         const formValues = {
           name: initialData.name || '',
           description: initialData.description || '',
+          tags: initialData.tags || '',
           materialIds: initialData.materialIds || [],
           videoPath: initialData.videoPath || '',
           publishStatus: initialData.publishStatus,
@@ -103,7 +105,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   };
 
   const handleMaterialsChange = (selectedMaterialIds: number[]) => {
-    const selected = materials.filter(m => selectedMaterialIds.includes(m.id as number));
+    const selected = materials.filter(m => selectedMaterialIds?.includes(m.id as number));
     setSelectedMaterials(selected);
     
     const relatedSkuIds = new Set<number>();
@@ -123,15 +125,13 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   };
 
   const handleSubmit = async (values: ProjectFormValues) => {
-    if (!values.materialIds?.length) {
-      return;
-    }
 
     await onSubmit({
       name: values.name.trim(),
       description: values.description?.trim() || '',
       materialIds: values.materialIds,
       videoPath: values.videoPath,
+      tags: values.tags,
       publishStatus: values.publishStatus,
       publishTime: values.publishTime ? dayjs(values.publishTime).format('YYYY-MM-DD HH:mm:ss') : undefined,
       extraInfo: values.extraInfo?.trim() || ''
@@ -148,6 +148,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             <Space key={material.id} size={4}>
               <MaterialFolderTag 
                 filePath={material.filePath} 
+                name={material.name}
                 onClose={() => handleRemoveMaterial(material.id as number)}
               />
             </Space>
@@ -172,14 +173,18 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Form.Item 
           name="name" 
-          label="名字"
-          rules={[{ required: true, message: '请输入视频名字' }]}
+          label="标题"
+          rules={[{ required: true, message: '请输入项目标题' }]}
         >
-          <Input placeholder="请输入视频名字" />
+          <Input placeholder="请输入项目标题" />
         </Form.Item>
 
-        <Form.Item name="description" label="描述">
+        <Form.Item name="description" label="正文">
           <Input.TextArea />
+        </Form.Item>
+
+        <Form.Item name="tags" label="标签">
+          <Input placeholder="请输入项目标签" />
         </Form.Item>
 
         <Form.Item 
@@ -256,7 +261,6 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                   <Form.Item 
                     name="videoPath" 
                     label="视频路径" 
-                    required
                     rules={[{ required: true, message: '请选择视频文件' }]}
                   >
                     <Space.Compact style={{ width: '100%' }}>

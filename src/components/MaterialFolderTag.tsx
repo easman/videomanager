@@ -5,6 +5,7 @@ import { FolderOutlined } from '@ant-design/icons';
 
 interface MaterialFolderTagProps {
   filePath: string;
+  name: string;
   style?: React.CSSProperties;
   onClick?: () => void;
   onClose?: () => void;
@@ -12,6 +13,7 @@ interface MaterialFolderTagProps {
 
 const MaterialFolderTag: React.FC<MaterialFolderTagProps> = ({
   filePath,
+  name,
   style,
   onClick,
   onClose
@@ -53,7 +55,14 @@ const MaterialFolderTag: React.FC<MaterialFolderTagProps> = ({
           onClose?.();
         }}
       >
-        {getLastDirectory(filePath)}
+        <span style={{ fontWeight: 500 }}>{name}</span>
+        <span style={{ 
+          marginLeft: 4,
+          color: '#8c8c8c',
+          fontSize: '12px'
+        }}>
+          ({getLastDirectory(filePath)})
+        </span>
       </Tag>
     </Tooltip>
   );

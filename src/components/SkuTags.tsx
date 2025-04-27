@@ -31,7 +31,6 @@ const SkuTags: React.FC<SkuTagsProps> = ({
   const renderSkuDetail = (sku: Sku) => {
     // 处理图片路径
     const imagePath = sku.image ? `${imagesDir}/${sku.image}` : '';
-    console.log('imagePath', imagePath)
     return (
       <div style={{ maxWidth: '300px' }}>
         {imagePath && (
@@ -67,7 +66,7 @@ const SkuTags: React.FC<SkuTagsProps> = ({
           <div><strong>购买日期:</strong> {sku.buyDate || '-'}</div>
           <div><strong>购买价格:</strong> {sku.buyPrice ? `¥${sku.buyPrice}` : '-'}</div>
           <div style={{ 
-            color: sku.returned ? '#ff7875' : '#95de64',
+            color: sku.returned ? '#ff7875' : '#00BFFF',
             marginTop: 4
           }}>
             <strong>{sku.returned ? '已退货' : '未退货'}</strong>
@@ -110,7 +109,7 @@ const SkuTags: React.FC<SkuTagsProps> = ({
                 }}
                 closable={!!onClose}
                 onClose={onClose ? () => onClose(id) : undefined}
-                color={sku.returned ? 'error' : 'success'}
+                color={sku.returned ? 'error' : 'processing'}
               >
                 [{sku.id}]【{sku.brand}】{sku.name}（{sku.type}）
               </Tag>

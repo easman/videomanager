@@ -21,10 +21,8 @@ console.log('User Data path:', app.getPath('userData'));
 const getImagesDir = () => {
   const userDataPath = app.getPath('userData');
   const imagesDir = path.join(userDataPath, 'images');
-  console.log('getImagesDir imagesDir', imagesDir);
   // 确保目录存在
   if (!fs.existsSync(imagesDir)) {
-    console.log('getImagesDir imagesDir', "ok");
     fs.mkdirSync(imagesDir, { recursive: true });
   }
   

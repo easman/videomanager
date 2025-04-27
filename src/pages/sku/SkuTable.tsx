@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Popconfirm, message, Modal, Space, Image, Input } from 'antd';
-import { PictureOutlined, DeleteOutlined, SwapOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
+import type { ColumnType } from 'antd/es/table';
+import { PictureOutlined, DeleteOutlined, SwapOutlined, EditOutlined, SearchOutlined, LinkOutlined } from '@ant-design/icons';
 import { Sku } from '../../db';
 import { db } from '../../db';
 
@@ -19,6 +20,28 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
   // 批量操作模式
   const [batchMode, setBatchMode] = useState(false);
   const [searchText, setSearchText] = useState('');
+  // 添加引用次数状态
+  const [referenceCountMap, setReferenceCountMap] = useState<Record<number, number>>({});
+
+  // 获取引用次数
+  const updateReferenceCounts = async () => {
+    const counts: Record<number, number> = {};
+    const materials = await db.videoMaterials.toArray();
+    
+    // 统计每个服饰被引用的次数
+    materials.forEach(material => {
+      material.skuIds?.forEach(skuId => {
+        counts[skuId] = (counts[skuId] || 0) + 1;
+      });
+    });
+    
+    setReferenceCountMap(counts);
+  };
+
+  // 在组件挂载和数据源更新时获取引用次数
+  useEffect(() => {
+    updateReferenceCounts();
+  }, [dataSource]);
 
   // 添加数据检查
   React.useEffect(() => {
@@ -36,7 +59,7 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
     const searchLower = searchText.toLowerCase();
     return dataSource.filter(item => 
       SEARCHABLE_FIELDS.some(field => 
-        String(item[field] || '').toLowerCase().includes(searchLower)
+        String(item[field] || '').toLowerCase()?.includes(searchLower)
       )
     );
   }, [dataSource, searchText]);
@@ -80,7 +103,7 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
   const handleBatchReturn = async () => {
     try {
       // 获取选中的SKU记录
-      const selectedSkus = dataSource.filter(sku => selectedRowKeys.includes(sku.id as number));
+      const selectedSkus = dataSource.filter(sku => selectedRowKeys?.includes(sku.id as number));
       
       // 更新每个选中的SKU的退货状态
       await Promise.all(
@@ -161,6 +184,35 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
     { title: '购入平台', dataIndex: 'buyPlatform', key: 'buyPlatform', width: 120 },
     { title: '购入价格', dataIndex: 'buyPrice', key: 'buyPrice', width: 100 },
     { title: '尺码信息', dataIndex: 'sizeInfo', key: 'sizeInfo', width: 120 },
+    {
+      title: '引用次数',
+      key: 'referenceCount',
+      width: 100,
+      filters: [
+        { text: '0次', value: '0' },
+        { text: '1次', value: '1' },
+        { text: '2次', value: '2' },
+        { text: '3次', value: '3' },
+        { text: '4次及以上', value: '4' }
+      ],
+      onFilter: (value, record: Sku) => {
+        const count = referenceCountMap[record.id as number] || 0;
+        const filterValue = Number(value);
+        if (filterValue === 4) {
+          return count >= 4;
+        }
+        return count === filterValue;
+      },
+      render: (_: any, record: Sku) => {
+        const count = referenceCountMap[record.id as number] || 0;
+        return (
+          <Space>
+            <LinkOutlined style={{ color: count > 0 ? '#1890ff' : '#d9d9d9' }} />
+            <span>{count}</span>
+          </Space>
+        );
+      },
+    } as ColumnType<Sku>,
     { 
       title: '退货状态', 
       dataIndex: 'returned', 
@@ -176,7 +228,7 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
         return recordReturned === (value === 'true');
       },
       render: (returned: boolean) => (
-        <span style={{ color: returned ? '#ff4d4f' : '#52c41a' }}>
+        <span style={{ color: returned ? '#DC143C' : '#6495ED' }}>
           {returned ? '已退货' : '未退货'}
         </span>
       )
@@ -237,7 +289,7 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
       onRow={(record) => ({
         style: { cursor: 'default' }
       })}
-      style={{ width: '100%' }}
+      style={{ width: '100%', marginTop: 16 }}
       title={() => (
         <div style={{ 
           display: 'flex', 

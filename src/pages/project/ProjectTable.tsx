@@ -31,17 +31,22 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
     const searchLower = searchText.toLowerCase();
     return dataSource.filter(video => {
       // 检查视频ID和名字
-      if (String(video.id).includes(searchLower) || 
-          video.name.toLowerCase().includes(searchLower)) {
+      if (String(video.id)?.includes(searchLower) || 
+          video.name.toLowerCase()?.includes(searchLower)) {
+        return true;
+      }
+
+      // 检查标签
+      if (video.tags?.toLowerCase()?.includes(searchLower)) {
         return true;
       }
 
       // 检查关联素材
-      const relatedMaterials = materials.filter(m => video.materialIds.includes(m.id as number));
+      const relatedMaterials = materials.filter(m => video.materialIds?.includes(m.id as number));
       const materialMatch = relatedMaterials.some(material => 
-        String(material.id).includes(searchLower) ||
-        material.name.toLowerCase().includes(searchLower) ||
-        getLastDirectory(material.filePath).toLowerCase().includes(searchLower)
+        String(material.id)?.includes(searchLower) ||
+        material.name.toLowerCase()?.includes(searchLower) ||
+        getLastDirectory(material.filePath).toLowerCase()?.includes(searchLower)
       );
       if (materialMatch) return true;
 
@@ -53,10 +58,10 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
 
       const relatedSkus = skus.filter(sku => materialSkuIds.has(sku.id as number));
       return relatedSkus.some(sku => 
-        String(sku.id).includes(searchLower) ||
-        sku.name.toLowerCase().includes(searchLower) ||
-        sku.brand.toLowerCase().includes(searchLower) ||
-        sku.type.toLowerCase().includes(searchLower)
+        String(sku.id)?.includes(searchLower) ||
+        sku.name.toLowerCase()?.includes(searchLower) ||
+        sku.brand.toLowerCase()?.includes(searchLower) ||
+        sku.type.toLowerCase()?.includes(searchLower)
       );
     });
   }, [dataSource, materials, skus, searchText]);
@@ -75,6 +80,38 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       key: 'name',
       width: 100
     },
+    {
+      title: '正文',
+      dataIndex: 'description',
+      key: 'description',
+      width: 200,
+      render: (text: string) => (
+        <div style={{
+          fontSize: '12px',
+          color: '#8c8c8c',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word'
+        }}>
+          {text || '-'}
+        </div>
+      )
+    },
+    {
+      title: '标签',
+      dataIndex: 'tags',
+      key: 'tags',
+      width: 150,
+      render: (tags: string) => (
+        <div style={{
+          fontSize: '12px',
+          color: '#8c8c8c',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word'
+        }}>
+          {tags || '-'}
+        </div>
+      )
+    },
     { 
       title: '关联服饰', 
       key: 'skus',
@@ -82,7 +119,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       render: (_: any, record: Project) => {
         const materialSkuIds = new Set<number>();
         materials
-          .filter(m => record.materialIds.includes(m.id as number))
+          .filter(m => record.materialIds?.includes(m.id as number))
           .forEach(material => {
             material.skuIds?.forEach(skuId => materialSkuIds.add(skuId));
           });
@@ -96,7 +133,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       }
     },
     { 
-      title: '素材文件夹', 
+      title: '素材', 
       dataIndex: 'materialIds', 
       key: 'materialIds',
       width: 150,
@@ -112,7 +149,8 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
               return material ? (
                 <MaterialFolderTag 
                   key={id} 
-                  filePath={material.filePath} 
+                  filePath={material.filePath}
+                  name={material.name}
                 />
               ) : null;
             })}
@@ -206,7 +244,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
           }}>
             <span style={{ fontSize: '16px', fontWeight: 500, whiteSpace: 'nowrap' }}>项目列表</span>
             <Input
-              placeholder="搜索ID、名字、关联服饰(ID/名字/品牌/类型)、关联素材(ID/名字/文件夹)"
+              placeholder="搜索ID、名字、标签、关联服饰(ID/名字/品牌/类型)、关联素材(ID/名字/文件夹)"
               prefix={<SearchOutlined style={{ color: '#999' }} />}
               value={searchText}
               onChange={e => setSearchText(e.target.value)}

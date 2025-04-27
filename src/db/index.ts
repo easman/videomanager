@@ -30,6 +30,7 @@ export interface Project {
   id?: number;  // id 在创建时是可选的，Dexie 会自动生成
   name: string;
   description: string;
+  tags: string; // 标签
   materialIds: number[]; // 关联素材
   videoPath: string; // 最终视频文件路径
   publishStatus: '未编辑' | '编辑中' | '待发布' | '已发布';

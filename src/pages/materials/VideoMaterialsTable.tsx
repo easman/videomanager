@@ -28,11 +28,12 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
     
     // 统计每个素材被引用的次数
     projects.forEach(project => {
-      project.materialIds.forEach(materialId => {
+      console.log('updateReferenceCounts project', project.materialIds)
+      project.materialIds?.forEach(materialId => {
         counts[materialId] = (counts[materialId] || 0) + 1;
       });
     });
-    
+    console.log('updateReferenceCounts counts', counts)
     setReferenceCountMap(counts);
   };
 
@@ -148,24 +149,20 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
       ellipsis: true
     },
     { 
-      title: '名字', 
-      dataIndex: 'name', 
-      key: 'name',
-      width: 100,
-      ellipsis: false
-    },
-    { 
-      title: '素材文件夹', 
+      title: '素材', 
       dataIndex: 'filePath', 
       key: 'filePath',
       width: 150,
-      render: (filePath: string) => (
+      render: (filePath: string, record: VideoMaterial) => (
         <div style={{ 
           maxWidth: '100%',
           wordBreak: 'break-all',
           whiteSpace: 'normal'
         }}>
-          <MaterialFolderTag filePath={filePath} />
+          <MaterialFolderTag 
+            filePath={filePath}
+            name={record.name}
+          />
         </div>
       )
     },
