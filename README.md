@@ -75,8 +75,4 @@
 - `src/` - React应用源码
 - `electron/` - Electron主进程代码
 - `src/db/` - Dexie数据库模型定义
-- `src/pages/` - 应用页面组件
-
----
-
-如需扩展功能或桌面化，可后续集成 Electron/Tauri。 
+- `src/pages/` - 应用页面组件 
