@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Button, Popconfirm, message, Modal, Space, Image, Input } from 'antd';
+import { Table, Button, Popconfirm, message, Modal, Space, Image, Input, Tooltip } from 'antd';
 import type { ColumnType } from 'antd/es/table';
 import { PictureOutlined, DeleteOutlined, SwapOutlined, EditOutlined, SearchOutlined, LinkOutlined } from '@ant-design/icons';
 import { Sku } from '../../db';
 import { db } from '../../db';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
 interface SkuTableProps {
   dataSource: Sku[];
@@ -11,31 +12,68 @@ interface SkuTableProps {
   onEdit: (record: Sku) => void;
 }
 
+interface ReferenceInfo {
+  id: number;
+  name: string;
+}
+
 // 定义可搜索的字段
 const SEARCHABLE_FIELDS = ['id', 'name', 'type', 'color', 'brand', 'buyPlatform'] as const;
 
 const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit }) => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [searchText, setSearchText] = useState(searchParams.get('search') || '');
   // 选中的行
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   // 批量操作模式
   const [batchMode, setBatchMode] = useState(false);
-  const [searchText, setSearchText] = useState('');
   // 添加引用次数状态
   const [referenceCountMap, setReferenceCountMap] = useState<Record<number, number>>({});
+  const [referenceListMap, setReferenceListMap] = useState<Record<number, ReferenceInfo[]>>({});
+
+  // 监听 URL 搜索参数变化
+  useEffect(() => {
+    const searchValue = searchParams.get('search');
+    if (searchValue) {
+      setSearchText(searchValue);
+    }
+  }, [searchParams]);
+
+  // 处理搜索文本变化
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchText(value);
+    // 更新 URL 参数
+    if (value) {
+      navigate(`/sku?search=${encodeURIComponent(value)}`, { replace: true });
+    } else {
+      navigate('/sku', { replace: true });
+    }
+  };
 
   // 获取引用次数
   const updateReferenceCounts = async () => {
     const counts: Record<number, number> = {};
+    const references: Record<number, ReferenceInfo[]> = {};
     const materials = await db.videoMaterials.toArray();
     
     // 统计每个服饰被引用的次数
     materials.forEach(material => {
       material.skuIds?.forEach(skuId => {
         counts[skuId] = (counts[skuId] || 0) + 1;
+        if (!references[skuId]) {
+          references[skuId] = [];
+        }
+        references[skuId].push({
+          id: material.id as number,
+          name: material.name
+        });
       });
     });
     
     setReferenceCountMap(counts);
+    setReferenceListMap(references);
   };
 
   // 在组件挂载和数据源更新时获取引用次数
@@ -205,11 +243,49 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
       },
       render: (_: any, record: Sku) => {
         const count = referenceCountMap[record.id as number] || 0;
+        const references = referenceListMap[record.id as number] || [];
+        
         return (
-          <Space>
-            <LinkOutlined style={{ color: count > 0 ? '#1890ff' : '#d9d9d9' }} />
-            <span>{count}</span>
-          </Space>
+          <Tooltip 
+            title={
+              <div style={{ maxWidth: '300px' }}>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>引用素材列表：</div>
+                {references.map((ref, index) => (
+                  <div 
+                    key={ref.id}
+                    style={{ 
+                      cursor: 'pointer',
+                      padding: '4px 8px',
+                      color: '#fff',
+                      borderRadius: 4,
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      marginBottom: index === references.length - 1 ? 0 : 4,
+                      transition: 'all 0.3s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // 使用 navigate 进行跳转并传递搜索参数
+                      navigate('/materials?search=' + encodeURIComponent(ref.name));
+                    }}
+                  >
+                    {ref.name}
+                  </div>
+                ))}
+              </div>
+            }
+            overlayStyle={{ maxWidth: 'none' }}
+          >
+            <Space>
+              <LinkOutlined style={{ color: count > 0 ? '#1890ff' : '#d9d9d9' }} />
+              <span>{count}</span>
+            </Space>
+          </Tooltip>
         );
       },
     } as ColumnType<Sku>,
@@ -309,7 +385,7 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
               placeholder="搜索名字、类型、颜色、品牌、购入平台"
               prefix={<SearchOutlined style={{ color: '#999' }} />}
               value={searchText}
-              onChange={e => setSearchText(e.target.value)}
+              onChange={handleSearchChange}
               style={{ maxWidth: '400px' }}
               allowClear
             />

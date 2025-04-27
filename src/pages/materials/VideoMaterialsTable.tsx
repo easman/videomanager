@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Tag, Space, Popconfirm, Modal, Input, message, Tooltip } from 'antd';
+import type { ColumnType } from 'antd/es/table';
 import { DeleteOutlined, EditOutlined, SearchOutlined, LinkOutlined } from '@ant-design/icons';
 import { VideoMaterial, Sku, db } from '../../db';
 import SkuTags from '../../components/SkuTags';
 import MaterialFolderTag from '../../components/MaterialFolderTag';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface VideoMaterialsTableProps {
   dataSource: VideoMaterial[];
@@ -12,18 +14,47 @@ interface VideoMaterialsTableProps {
   onEdit: (record: VideoMaterial) => void;
 }
 
+interface ReferenceInfo {
+  id: number;
+  name: string;
+}
+
 const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
   dataSource,
   skus,
   onDelete,
   onEdit
 }) => {
-  const [searchText, setSearchText] = useState('');
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [searchText, setSearchText] = useState(searchParams.get('search') || '');
   const [referenceCountMap, setReferenceCountMap] = useState<Record<number, number>>({});
+  const [referenceListMap, setReferenceListMap] = useState<Record<number, ReferenceInfo[]>>({});
+
+  // 监听 URL 搜索参数变化
+  useEffect(() => {
+    const searchValue = searchParams.get('search');
+    if (searchValue) {
+      setSearchText(searchValue);
+    }
+  }, [searchParams]);
+
+  // 处理搜索文本变化
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchText(value);
+    // 更新 URL 参数
+    if (value) {
+      navigate(`/materials?search=${encodeURIComponent(value)}`, { replace: true });
+    } else {
+      navigate('/materials', { replace: true });
+    }
+  };
 
   // 获取引用次数
   const updateReferenceCounts = async () => {
     const counts: Record<number, number> = {};
+    const references: Record<number, ReferenceInfo[]> = {};
     const projects = await db.projects.toArray();
     
     // 统计每个素材被引用的次数
@@ -31,10 +62,18 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
       console.log('updateReferenceCounts project', project.materialIds)
       project.materialIds?.forEach(materialId => {
         counts[materialId] = (counts[materialId] || 0) + 1;
+        if (!references[materialId]) {
+          references[materialId] = [];
+        }
+        references[materialId].push({
+          id: project.id as number,
+          name: project.name
+        });
       });
     });
     console.log('updateReferenceCounts counts', counts)
     setReferenceCountMap(counts);
+    setReferenceListMap(references);
   };
 
   // 在组件挂载和数据源更新时获取引用次数
@@ -167,7 +206,7 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
       )
     },
     { 
-      title: '关联服饰', 
+      title: '服饰', 
       dataIndex: 'skuIds', 
       key: 'skuIds',
       width: 300,
@@ -179,10 +218,61 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
       title: '引用次数',
       key: 'referenceCount',
       width: 100,
+      filters: [
+        { text: '0次', value: '0' },
+        { text: '1次', value: '1' },
+        { text: '2次', value: '2' },
+        { text: '3次', value: '3' },
+        { text: '4次及以上', value: '4' }
+      ],
+      onFilter: (value, record: VideoMaterial) => {
+        const count = referenceCountMap[record.id as number] || 0;
+        const filterValue = Number(value);
+        if (filterValue === 4) {
+          return count >= 4;
+        }
+        return count === filterValue;
+      },
       render: (_: any, record: VideoMaterial) => {
         const count = referenceCountMap[record.id as number] || 0;
+        const references = referenceListMap[record.id as number] || [];
+        
         return (
-          <Tooltip>
+          <Tooltip 
+            title={
+              <div style={{ maxWidth: '300px' }}>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>引用项目列表：</div>
+                {references.map((ref, index) => (
+                  <div 
+                    key={ref.id}
+                    style={{ 
+                      cursor: 'pointer',
+                      padding: '4px 8px',
+                      color: '#fff',
+                      borderRadius: 4,
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      marginBottom: index === references.length - 1 ? 0 : 4,
+                      transition: 'all 0.3s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // 使用 navigate 进行跳转并传递搜索参数
+                      navigate('/projects?search=' + encodeURIComponent(ref.name));
+                    }}
+                  >
+                    {ref.name}
+                  </div>
+                ))}
+              </div>
+            }
+            overlayStyle={{ maxWidth: 'none' }}
+          >
             <Space>
               <LinkOutlined style={{ color: count > 0 ? '#1890ff' : '#d9d9d9' }} />
               <span>{count}</span>
@@ -252,7 +342,7 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
               placeholder="搜索名字、文件夹路径、关联服饰的ID、品牌、名字、类型"
               prefix={<SearchOutlined style={{ color: '#999' }} />}
               value={searchText}
-              onChange={e => setSearchText(e.target.value)}
+              onChange={handleSearchChange}
               style={{ maxWidth: '400px' }}
               allowClear
             />

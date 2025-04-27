@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Button, Space, Tag, message } from 'antd';
-import { FolderOutlined, SwapOutlined, CloseOutlined } from '@ant-design/icons';
+import { FolderOutlined } from '@ant-design/icons';
 import { VideoMaterial, Sku } from '../../db';
 import { getLastDirectory } from '../../utils/path';
 import SkuTags from '../../components/SkuTags';
@@ -35,8 +35,6 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
 }) => {
   const [form] = Form.useForm<VideoMaterialFormValues>();
   const [filePath, setFilePath] = useState('');
-  const [customName, setCustomName] = useState('');
-  const [usingFolderName, setUsingFolderName] = useState(true);
   const [selectedSkus, setSelectedSkus] = useState<number[]>([]);
 
   // 初始化表单数据
@@ -45,8 +43,6 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
       if (mode === 'edit' && initialData) {
         // 编辑模式：设置初始值
         setFilePath(initialData.filePath);
-        setCustomName(initialData.name);
-        setUsingFolderName(initialData.name === getLastDirectory(initialData.filePath));
         setSelectedSkus(initialData.skuIds || []);
         
         // 使用 setTimeout 确保在下一个事件循环中设置表单值
@@ -61,8 +57,6 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
         // 新建模式：重置表单
         form.resetFields();
         setFilePath('');
-        setCustomName('');
-        setUsingFolderName(true);
         setSelectedSkus([]);
       }
     }
@@ -76,42 +70,10 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
     try {
       const path = await window.electronAPI.selectFolder();
       if (path) {
-        const folderName = getLastDirectory(path);
         setFilePath(path);
-        
-        // 如果名称未填写，自动使用文件夹名
-        if (!form.getFieldValue('name')) {
-          form.setFieldsValue({ name: folderName });
-          setUsingFolderName(true);
-        }
       }
     } catch (error) {
       console.error('选择文件夹失败：', error);
-    }
-  };
-
-  const toggleName = () => {
-    const currentName = form.getFieldValue('name');
-    const folderName = getLastDirectory(filePath);
-    
-    if (usingFolderName) {
-      // 切换到自定义名称
-      form.setFieldsValue({ name: customName });
-      setUsingFolderName(false);
-    } else {
-      // 切换到文件夹名称
-      setCustomName(currentName); // 保存当前的自定义名称
-      form.setFieldsValue({ name: folderName });
-      setUsingFolderName(true);
-    }
-  };
-
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newName = e.target.value;
-    const folderName = getLastDirectory(filePath);
-    setUsingFolderName(newName === folderName);
-    if (!usingFolderName) {
-      setCustomName(newName);
     }
   };
 
@@ -149,26 +111,6 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
     } catch (error) {
       console.error('打开文件夹失败：', error);
     }
-  };
-
-  const renderNameLabel = () => {
-    if (!filePath) return '名字';
-
-    return (
-      <Space>
-        名字
-        {filePath && (
-          <Button 
-            type="link" 
-            icon={<SwapOutlined />} 
-            onClick={toggleName}
-            size="small"
-          >
-            {usingFolderName ? '使用自定义名' : '使用文件夹名'}
-          </Button>
-        )}
-      </Space>
-    );
   };
 
   const renderSelectedSkus = () => {
@@ -221,29 +163,22 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
             <Button 
               icon={<FolderOutlined />} 
               onClick={handleFolderSelect}
-              />
+            />
           </Space.Compact>
         </Form.Item>
 
-        <Form.Item noStyle shouldUpdate>
-          {() => (
-            <Form.Item
-              name="name"
-              label={renderNameLabel()}
-              rules={[{ required: true, message: '请输入素材名字' }]}
-            >
-              <Input 
-                placeholder="请输入素材名字" 
-                onChange={handleNameChange}
-              />
-            </Form.Item>
-          )}
+        <Form.Item
+          name="name"
+          label="名字"
+          rules={[{ required: true, message: '请输入素材名字' }]}
+        >
+          <Input placeholder="请输入素材名字" />
         </Form.Item>
 
         <Form.Item
           label={
             <div style={{ marginBottom: selectedSkus.length ? 0 : 8 }}>
-              关联服饰
+              服饰
               {renderSelectedSkus()}
             </div>
           }
@@ -251,7 +186,7 @@ const VideoMaterialsForm: React.FC<VideoMaterialFormProps> = ({
         >
           <Select
             mode="multiple"
-            placeholder="请选择关联服饰"
+            placeholder="请关联服饰"
             style={{ width: '100%' }}
             optionFilterProp="children"
             showSearch

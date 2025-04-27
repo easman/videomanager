@@ -191,14 +191,14 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
           name="materialIds" 
           label={
             <div style={{ marginBottom: selectedMaterials.length ? 0 : 8 }}>
-              关联素材
+              素材
               {renderSelectedMaterials()}
             </div>
           }
         >
           <Select
             mode="multiple"
-            placeholder="请选择素材"
+            placeholder="请关联素材"
             onChange={handleMaterialsChange}
             style={{ width: '100%' }}
             showSearch

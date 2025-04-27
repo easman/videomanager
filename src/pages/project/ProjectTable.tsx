@@ -1,11 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Table, Button, Tag, Space, Popconfirm, Input } from 'antd';
+import type { ColumnType } from 'antd/es/table';
 import { DeleteOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
 import { Project, Sku, VideoMaterial } from '../../db';
 import { getLastDirectory } from '../../utils/path';
 import SkuTags from '../../components/SkuTags';
 import MaterialFolderTag from '../../components/MaterialFolderTag';
 import VideoFileTag from '../../components/VideoFileTag';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface ProjectTableProps {
   dataSource: Project[];
@@ -22,7 +24,29 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
   onDelete,
   onEdit
 }) => {
-  const [searchText, setSearchText] = useState('');
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [searchText, setSearchText] = useState(searchParams.get('search') || '');
+
+  // 监听 URL 搜索参数变化
+  useEffect(() => {
+    const searchValue = searchParams.get('search');
+    if (searchValue) {
+      setSearchText(searchValue);
+    }
+  }, [searchParams]);
+
+  // 处理搜索文本变化
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchText(value);
+    // 更新 URL 参数
+    if (value) {
+      navigate(`/projects?search=${encodeURIComponent(value)}`, { replace: true });
+    } else {
+      navigate('/projects', { replace: true });
+    }
+  };
 
   // 过滤后的数据
   const filteredData = useMemo(() => {
@@ -113,7 +137,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       )
     },
     { 
-      title: '关联服饰', 
+      title: '服饰', 
       key: 'skus',
       width: 300,
       render: (_: any, record: Project) => {
@@ -174,11 +198,32 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       )
     },
     { 
-      title: '发布状态', 
+      title: '状态', 
       dataIndex: 'publishStatus', 
       key: 'publishStatus',
-      width: 120
-    },
+      width: 120,
+      filters: [
+        { text: '未编辑', value: '未编辑' },
+        { text: '编辑中', value: '编辑中' },
+        { text: '待发布', value: '待发布' },
+        { text: '已发布', value: '已发布' }
+      ],
+      onFilter: (value: React.Key, record: Project) => 
+        record.publishStatus === value,
+      render: (status: string) => {
+        const colorMap = {
+          '未编辑': '#8c8c8c',
+          '编辑中': '#1890ff',
+          '待发布': '#faad14',
+          '已发布': '#52c41a'
+        };
+        return (
+          <span style={{ color: colorMap[status as keyof typeof colorMap] }}>
+            {status}
+          </span>
+        );
+      }
+    } as ColumnType<Project>,
     { 
       title: '发布时间', 
       dataIndex: 'publishTime', 
@@ -247,7 +292,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
               placeholder="搜索ID、名字、标签、关联服饰(ID/名字/品牌/类型)、关联素材(ID/名字/文件夹)"
               prefix={<SearchOutlined style={{ color: '#999' }} />}
               value={searchText}
-              onChange={e => setSearchText(e.target.value)}
+              onChange={handleSearchChange}
               style={{ maxWidth: '600px' }}
               allowClear
             />

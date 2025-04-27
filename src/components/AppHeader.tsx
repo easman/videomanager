@@ -1,14 +1,17 @@
 import React from 'react';
 import { Layout, Menu } from 'antd';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { SettingOutlined } from '@ant-design/icons';
 
 const { Header } = Layout;
 
 const AppHeader: React.FC = () => {
+  const location = useLocation();
+  const currentPath = location.pathname.split('/')[1] || 'sku';
+
   return (
     <Header>
-      <Menu theme="dark" mode="horizontal" defaultSelectedKeys={['sku']}>
+      <Menu theme="dark" mode="horizontal" selectedKeys={[currentPath]}>
         <Menu.Item key="sku">
           <Link to="/sku">服饰管理</Link>
         </Menu.Item>
