@@ -95,11 +95,14 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       title: 'ID', 
       dataIndex: 'id', 
       key: 'id',
-      width: 50,
-      ellipsis: true
+      width: 70,
+      fixed: 'left' as const,
+      defaultSortOrder: 'ascend' as const,
+      sorter: (a, b) => (b.id as number) - (a.id as number)
     },
     { 
       title: '名字', 
+      fixed: 'left' as const,
       dataIndex: 'name', 
       key: 'name',
       width: 100

@@ -5,6 +5,7 @@ import SkuPage from '../pages/sku/SkuPage';
 import VideoMaterialsPage from '../pages/materials/VideoMaterialsPage';
 import ProjectPage from '../pages/project/ProjectPage';
 import SettingsPage from '../pages/settings/SettingsPage';
+import BodyRecordPage from '../pages/body/BodyRecordPage';
 
 const { Content } = Layout;
 
@@ -18,6 +19,7 @@ const AppContent: React.FC = () => {
         <Route path="/sku" element={<SkuPage />} />
         <Route path="/materials" element={<VideoMaterialsPage />} />
         <Route path="/projects" element={<ProjectPage />} />
+        <Route path="/body" element={<BodyRecordPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </Content>

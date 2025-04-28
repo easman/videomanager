@@ -22,7 +22,7 @@ const VideoMaterialsPage: React.FC = () => {
       db.videoMaterials.toArray(),
       db.skus.toArray()
     ]);
-    setMaterials(allMaterials.reverse());
+    setMaterials(allMaterials);
     setSkus(allSkus);
   };
 

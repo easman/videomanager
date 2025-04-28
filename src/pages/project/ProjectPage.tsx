@@ -21,7 +21,7 @@ const ProjectsPage: React.FC = () => {
       db.skus.toArray(),
       db.videoMaterials.toArray()
     ]);
-    setProjects(allProjects.filter((project): project is Project => project.id !== undefined).reverse());
+    setProjects(allProjects.filter((project): project is Project => project.id !== undefined));
     setSkus(allSkus);
     setMaterials(allMaterials);
   };

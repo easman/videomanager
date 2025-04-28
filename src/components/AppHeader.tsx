@@ -21,6 +21,9 @@ const AppHeader: React.FC = () => {
         <Menu.Item key="projects">
           <Link to="/projects">项目视频管理</Link>
         </Menu.Item>
+        <Menu.Item key="body">
+          <Link to="/body">身材记录</Link>
+        </Menu.Item>
         <Menu.Item key="settings" icon={<SettingOutlined />} style={{ marginLeft: 'auto' }}>
           <Link to="/settings">系统设置</Link>
         </Menu.Item>

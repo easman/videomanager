@@ -184,8 +184,10 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
       title: 'ID', 
       dataIndex: 'id', 
       key: 'id',
-      width: 50,
-      ellipsis: true
+      width: 60,
+      fixed: 'left' as const,
+      defaultSortOrder: 'ascend' as const,
+      sorter: (a, b) => (b.id as number) - (a.id as number)
     },
     { 
       title: '素材', 

@@ -6,7 +6,7 @@ import SkuForm from './SkuForm';
 import SkuTable from './SkuTable';
 
 const SkuPage: React.FC = () => {
-  const [clothes, setClothes] = useState<Sku[]>([]);
+  const [skus, setSkus] = useState<Sku[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -27,17 +27,17 @@ const SkuPage: React.FC = () => {
     getImagesDir();
   }, []);
 
-  const fetchClothes = async () => {
+  const fetchSkus = async () => {
     try {
       const all = await db.skus.toArray();
       
       // 预处理所有图片路径
-      const processedClothes = all.map(item => ({
+      const processedSkus = all.map(item => ({
         ...item,
         image: item.image ? `${imagesDir}/${item.image}` : ''
-      })).reverse();
+      }));
       
-      setClothes(processedClothes);
+      setSkus(processedSkus);
       
       // 获取所有已存在的类型、品牌和平台，并去重
       const types = Array.from(new Set(all.map(item => item.type))).filter(Boolean);
@@ -57,7 +57,7 @@ const SkuPage: React.FC = () => {
 
   useEffect(() => {
     if (imagesDir) {
-      fetchClothes();
+      fetchSkus();
     }
   }, [imagesDir]);
 
@@ -98,7 +98,7 @@ const SkuPage: React.FC = () => {
       }
       
       setModalVisible(false);
-      fetchClothes();
+      fetchSkus();
     } catch (error) {
       console.error(id ? '更新失败:' : '添加失败:', error);
       message.error((id ? '更新' : '添加') + '失败: ' + (error as Error).message);
@@ -130,8 +130,8 @@ const SkuPage: React.FC = () => {
       </Button>
       
       <SkuTable 
-        dataSource={clothes} 
-        onDataChange={fetchClothes}
+        dataSource={skus} 
+        onDataChange={fetchSkus}
         onEdit={handleEdit}
       />
       

@@ -39,10 +39,26 @@ export interface Project {
   modifiedTimes: string[]; // 修改时间列表，第一个是创建时间
 }
 
+export interface BodyRecord {
+  id?: number;
+  recordDate: string; // 记录日期
+  height: number; // 身高(cm)
+  weight: number; // 体重(斤)
+  shoulderWidth: number; // 肩宽(cm)
+  chestCircumference: number; // 胸围(cm)
+  waistCircumference: number; // 腰围(cm)
+  hipCircumference: number; // 臀围(cm)
+  thighCircumference: number; // 大腿围(cm)
+  armCircumference: number; // 大臂围(cm)
+  measurementTime: string; // 测量时间描述
+  modifiedTimes: string[]; // 修改时间列表，第一个是创建时间
+}
+
 class VideoManagerDB extends Dexie {
   skus!: Table<Sku, number>;
   videoMaterials!: Table<VideoMaterial, number>;
   projects!: Table<Project, number>;
+  bodyRecords!: Table<BodyRecord, number>;
 
   constructor() {
     super('VideoManagerDB');
@@ -159,6 +175,14 @@ class VideoManagerDB extends Dexie {
       
       // 删除旧表
       await finalVideosTable.clear();
+    });
+
+    // 添加版本12，增加身材记录表
+    this.version(12).stores({
+      skus: '++id, name, type, brand, color, returned',
+      videoMaterials: '++id, name, filePath',
+      projects: '++id, name, publishStatus, videoPath',
+      bodyRecords: '++id, recordDate'
     });
   }
 }

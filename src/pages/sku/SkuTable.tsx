@@ -160,7 +160,15 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 60, fixed: 'left' as const },
+    { 
+      title: 'ID', 
+      dataIndex: 'id', 
+      key: 'id', 
+      width: 70,
+      fixed: 'left' as const,
+      defaultSortOrder: 'ascend' as const,
+      sorter: (a, b) => (b.id as number) - (a.id as number)
+    },
     { 
       title: '图片', 
       dataIndex: 'image', 
