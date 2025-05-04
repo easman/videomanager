@@ -3,6 +3,11 @@ interface ElectronAPI {
   selectFolder: () => Promise<string>;
   selectImage: () => Promise<string>;
   saveImage: (imageData: string, fileName?: string) => Promise<{path: string, success: boolean, message?: string}>;
+  saveImages: (imagesData: Array<{imageData: string, fileName?: string}>) => Promise<{
+    success: boolean;
+    results?: Array<{path: string, success: boolean, message?: string}>;
+    message?: string;
+  }>;
   getAppImagesDir: () => Promise<string>;
   clearDirectory: (dirPath: string) => Promise<{ success: boolean; message?: string }>;
   openFolder: (folderPath: string) => Promise<{ success: boolean; message?: string }>;

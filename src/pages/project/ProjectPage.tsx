@@ -42,6 +42,20 @@ const ProjectsPage: React.FC = () => {
   const handleSubmit = async (values: Omit<Project, 'id' | 'modifiedTimes'>, id?: number) => {
     setSubmitting(true);
     try {
+      // 处理封面图片保存
+      const savedCoverImages = await Promise.all(
+        (values?.coverImages || []).map(async (img) => {
+          if (img.startsWith('data:')) {
+            const result = await window.electronAPI.saveImage(img);
+            if (!result.success) {
+              throw new Error('保存封面图片失败：' + result.message);
+            }
+            return result.path;
+          }
+          return img;
+        })
+      );
+
       if (id) {
         // 编辑模式
         const currentProject = await db.projects.get(id);
@@ -51,6 +65,7 @@ const ProjectsPage: React.FC = () => {
         
         await db.projects.update(id, {
           ...values,
+          coverImages: savedCoverImages,
           modifiedTimes: [...currentProject.modifiedTimes, dayjs().format('YYYY-MM-DD HH:mm:ss')]
         });
         message.success('更新成功');
@@ -58,6 +73,7 @@ const ProjectsPage: React.FC = () => {
         // 新增模式
         await db.projects.add({
           ...values,
+          coverImages: savedCoverImages,
           modifiedTimes: [dayjs().format('YYYY-MM-DD HH:mm:ss')]
         });
         message.success('添加成功');

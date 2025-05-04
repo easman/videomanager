@@ -67,7 +67,6 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
     
     // 统计每个素材被引用的次数
     projects.forEach(project => {
-      console.log('updateReferenceCounts project', project.materialIds)
       project.materialIds?.forEach(materialId => {
         counts[materialId] = (counts[materialId] || 0) + 1;
         if (!references[materialId]) {
@@ -79,7 +78,6 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
         });
       });
     });
-    console.log('updateReferenceCounts counts', counts)
     setReferenceCountMap(counts);
     setReferenceListMap(references);
   };

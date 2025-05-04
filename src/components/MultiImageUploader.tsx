@@ -9,7 +9,7 @@ import update from 'immutability-helper';
 const { Dragger } = Upload;
 
 interface MultiImageUploaderProps {
-  initImageUrls: string[];
+  imageUrls: string[];
   onImagesChange: (images: string[]) => void;
 }
 
@@ -25,6 +25,20 @@ const DraggableImage: React.FC<{
   onRemove: () => void;
 }> = ({ url, index, moveImage, onRemove }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const [imageSrc, setImageSrc] = useState<string>('');
+
+  // 预加载和缓存图片
+  useEffect(() => {
+    if (url.startsWith('data:')) {
+      // 对于 base64，创建一个 blob URL 来优化性能
+      const blob = dataURLtoBlob(url);
+      const blobUrl = URL.createObjectURL(blob);
+      setImageSrc(blobUrl);
+      return () => URL.revokeObjectURL(blobUrl);
+    } else {
+      setImageSrc(`file://${encodeURI(url)}`);
+    }
+  }, [url]);
 
   const [{ isDragging }, drag] = useDrag({
     type: 'image',
@@ -102,20 +116,22 @@ const DraggableImage: React.FC<{
           backgroundColor: '#f5f5f5',
         }}
       >
-        <Image
-          src={url.startsWith('data:') ? url : `file://${encodeURI(url)}`}
-          alt="预览"
-          style={{
-            width: '160px',
-            height: '120px',
-            objectFit: 'cover',
-            filter: isDragging ? 'blur(1px)' : 'none',
-            transition: 'all 0.2s ease',
-          }}
-          preview={{
-            mask: null
-          }}
-        />
+        {imageSrc && (
+          <Image
+            src={imageSrc}
+            alt="预览"
+            style={{
+              width: '160px',
+              height: '120px',
+              objectFit: 'cover',
+              filter: isDragging ? 'blur(1px)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
+            preview={{
+              mask: null
+            }}
+          />
+        )}
       </div>
       {!isDragging && (
         <Button
@@ -141,24 +157,30 @@ const DraggableImage: React.FC<{
   );
 };
 
+// 辅助函数：将 base64 转换为 Blob
+function dataURLtoBlob(dataurl: string): Blob {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+}
+
 const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({
-  initImageUrls,
+  imageUrls,
   onImagesChange,
 }) => {
   const pasteAreaRef = useRef<HTMLDivElement>(null);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   const [imageStatus, setImageStatus] = useState({
     processing: false,
     progress: 0,
     statusText: ''
   });
-
-  // 初始化和更新内部状态
-  useEffect(() => {
-    setImageUrls(initImageUrls);
-  }, [initImageUrls]);
-
 
   const handleImagesChange = async (files: File[] | Blob[]) => {
     setImageStatus({
@@ -193,7 +215,7 @@ const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({
         }
       }
 
-      setImageUrls(prev => [...prev, ...newImageUrls]);
+      onImagesChange([...imageUrls, ...newImageUrls]);
       setImageStatus({
         processing: false,
         progress: 100,
@@ -248,13 +270,11 @@ const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({
         [hoverIndex, 0, imageUrls[dragIndex]],
       ],
     });
-    setImageUrls(images);
     onImagesChange(images);
   };
 
   const handleRemoveImage = (index: number) => {
     const newUrls = imageUrls.filter((_, i) => i !== index);
-    setImageUrls(newUrls);
     onImagesChange(newUrls);
   };
 

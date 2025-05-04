@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Table, Button, Tag, Space, Popconfirm, Input } from 'antd';
+import { Table, Button, Tag, Space, Popconfirm, Input, Image } from 'antd';
 import type { ColumnType } from 'antd/es/table';
-import { DeleteOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, SearchOutlined, PictureOutlined } from '@ant-design/icons';
 import { Project, Sku, VideoMaterial } from '../../db';
 import { getLastDirectory } from '../../utils/path';
 import SkuTags from '../../components/SkuTags';
@@ -229,6 +229,59 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
           {videoPath ? <VideoFileTag filePath={videoPath} /> : '-'}
         </div>
       )
+    },
+    { 
+      title: '封面', 
+      dataIndex: 'coverImages', 
+      key: 'coverImages',
+      width: 90,
+      fixed: 'left' as const,
+      render: (coverImages: string[]) => {
+        if (!coverImages?.length) {
+          return (
+            <div style={{ 
+              width: 60, 
+              height: 60, 
+              background: '#f5f5f5', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              borderRadius: '4px',
+              color: '#ccc'
+            }}>
+              <PictureOutlined style={{ fontSize: 24 }} />
+            </div>
+          );
+        }
+
+        return (
+          <div 
+            style={{ 
+              width: 60,
+              height: 60,
+              position: 'relative',
+              borderRadius: '4px',
+              overflow: 'hidden'
+            }}
+          >
+            <Image
+              src={`file://${encodeURI(coverImages[0])}`}
+              alt="封面图片"
+              style={{ 
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+              onError={(e) => {
+                console.error('图片加载失败', e);
+              }}
+              preview={{
+                mask: <div style={{ color: '#fff' }}></div>,
+              }}
+            />
+          </div>
+        );
+      }
     },
     { 
       title: '状态', 

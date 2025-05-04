@@ -132,19 +132,17 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   };
 
   const handleCoverImagesChange = (images: string[]) => {
-    console.log('images lllll');
     setCoverImages(images);
     form.setFieldsValue({ coverImages: images });
   };
 
   const handleSubmit = async (values: ProjectFormValues) => {
-
     await onSubmit({
       name: values.name.trim(),
       description: values.description?.trim() || '',
       materialIds: values.materialIds,
       videoPath: values.videoPath,
-      coverImages: values.coverImages,
+      coverImages: coverImages,
       tags: values.tags,
       publishStatus: values.publishStatus,
       publishTime: values.publishTime ? dayjs(values.publishTime).format('YYYY-MM-DD HH:mm:ss') : undefined,
@@ -311,7 +309,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
           label="备选封面"
         >
           <MultiImageUploader
-            initImageUrls={coverImages}
+            imageUrls={coverImages}
             onImagesChange={handleCoverImagesChange}
           />
         </Form.Item>

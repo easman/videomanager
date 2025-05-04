@@ -165,6 +165,66 @@ ipcMain.handle('save-image', async (event, imageData, fileName) => {
   }
 });
 
+// 批量保存图片数据到应用缓存目录
+ipcMain.handle('save-images', async (event, imagesData) => {
+  try {
+    const imagesDir = getImagesDir();
+    const results = [];
+
+    for (const { imageData, fileName } of imagesData) {
+      try {
+        // 从 data URL 提取数据
+        const matches = imageData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) {
+          results.push({ success: false, message: '无效的图片数据格式' });
+          continue;
+        }
+        
+        const type = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        
+        // 生成文件名（如果没有提供）
+        let targetFileName = fileName;
+        if (!targetFileName) {
+          const hash = crypto.createHash('md5').update(buffer).digest('hex');
+          const extension = type.split('/')[1] || 'png';
+          targetFileName = `${hash}.${extension}`;
+        }
+        
+        // 确保文件名有正确的扩展名
+        if (!targetFileName.includes('.')) {
+          const extension = type.split('/')[1] || 'png';
+          targetFileName = `${targetFileName}.${extension}`;
+        }
+        
+        const filePath = path.join(imagesDir, targetFileName);
+        fs.writeFileSync(filePath, buffer);
+        
+        results.push({ 
+          success: true, 
+          path: filePath 
+        });
+      } catch (error) {
+        results.push({ 
+          success: false, 
+          message: '保存图片失败: ' + error.message 
+        });
+      }
+    }
+    
+    return { 
+      success: true, 
+      results 
+    };
+  } catch (error) {
+    console.error('批量保存图片失败:', error);
+    return { 
+      success: false, 
+      message: '批量保存图片失败: ' + error.message 
+    };
+  }
+});
+
 // 获取图片目录
 ipcMain.handle('get-app-images-dir', () => {
   return getImagesDir();
