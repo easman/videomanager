@@ -33,6 +33,7 @@ export interface Project {
   tags: string; // 标签
   materialIds: number[]; // 关联素材
   videoPath: string; // 最终视频文件路径
+  coverImages: string[]; // 备选封面图片路径数组
   publishStatus: '未编辑' | '编辑中' | '待发布' | '已发布';
   publishTime?: string;
   extraInfo: string; // 额外信息
@@ -184,6 +185,23 @@ class VideoManagerDB extends Dexie {
       videoMaterials: '++id, name, filePath',
       projects: '++id, name, publishStatus, videoPath',
       bodyRecords: '++id, recordDate'
+    });
+
+    // 添加版本13，增加 coverImages 字段
+    this.version(13).stores({
+      skus: '++id, name, type, brand, color, returned',
+      videoMaterials: '++id, name, filePath',
+      projects: '++id, name, publishStatus, videoPath',
+      bodyRecords: '++id, recordDate'
+    }).upgrade(async (trans: Transaction) => {
+      const projectsTable = trans.table('projects');
+      
+      // 为所有记录添加 coverImages 字段
+      await projectsTable.toCollection().modify(project => {
+        if (!project.coverImages) {
+          project.coverImages = [];
+        }
+      });
     });
   }
 }

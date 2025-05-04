@@ -8,6 +8,8 @@ import SkuTags from '../../components/SkuTags';
 import MaterialFolderTag from '../../components/MaterialFolderTag';
 import VideoFileTag from '../../components/VideoFileTag';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Resizable } from 'react-resizable';
+import 'react-resizable/css/styles.css';
 
 interface ProjectTableProps {
   dataSource: Project[];
@@ -35,6 +37,10 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [searchText, setSearchText] = useState(searchParams.get('search') || '');
+  const [nameColumnWidth, setNameColumnWidth] = useState(() => {
+    const savedWidth = localStorage.getItem('projectTableNameColumnWidth');
+    return savedWidth ? parseInt(savedWidth, 10) : 150;
+  });
 
   // 监听 URL 搜索参数变化
   useEffect(() => {
@@ -43,6 +49,13 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       setSearchText(searchValue);
     }
   }, [searchParams]);
+
+  // 监听列宽变化并保存到 localStorage
+  const handleResize = (_: any, { size }: any) => {
+    const newWidth = size.width;
+    setNameColumnWidth(newWidth);
+    localStorage.setItem('projectTableNameColumnWidth', newWidth.toString());
+  };
 
   // 处理搜索文本变化
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,11 +122,20 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       sorter: (a, b) => (b.id as number) - (a.id as number)
     },
     { 
-      title: '名字', 
+      title: (
+        <Resizable
+          width={nameColumnWidth}
+          height={0}
+          minConstraints={[150, 0]}
+          onResize={handleResize}
+        >
+          <div>名字</div>
+        </Resizable>
+      ), 
       fixed: 'left' as const,
       dataIndex: 'name', 
       key: 'name',
-      width: 100
+      width: nameColumnWidth
     },
     {
       title: '正文',

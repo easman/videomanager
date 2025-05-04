@@ -5,6 +5,7 @@ import { Project, Sku, VideoMaterial } from '../../db';
 import dayjs from 'dayjs';
 import SkuTags from '../../components/SkuTags';
 import MaterialFolderTag from '../../components/MaterialFolderTag';
+import MultiImageUploader from '../../components/MultiImageUploader';
 import { message } from 'antd';
 
 const { Option } = Select;
@@ -25,6 +26,7 @@ interface ProjectFormValues {
   description?: string;
   materialIds: number[];
   videoPath: string;
+  coverImages: string[];
   tags: string;
   publishStatus: '未编辑' | '编辑中' | '待发布' | '已发布';
   publishTime?: string;
@@ -45,6 +47,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   const [videoPath, setVideoPath] = useState('');
   const [selectedMaterialSkus, setSelectedMaterialSkus] = useState<Sku[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<VideoMaterial[]>([]);
+  const [coverImages, setCoverImages] = useState<string[]>([]);
 
   useEffect(() => {
     if (modalVisible) {
@@ -57,15 +60,18 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
           tags: initialData.tags || '',
           materialIds: initialData.materialIds || [],
           videoPath: initialData.videoPath || '',
+          coverImages: initialData.coverImages || [],
           publishStatus: initialData.publishStatus,
           publishTime: initialData.publishTime ? dayjs(initialData.publishTime) : undefined,
           extraInfo: initialData.extraInfo || ''
         };
         form.setFieldsValue(formValues);
         setVideoPath(initialData.videoPath);
+        setCoverImages(initialData.coverImages || []);
         handleMaterialsChange(initialData.materialIds);
       } else {
         setVideoPath('');
+        setCoverImages([]);
         setSelectedMaterialSkus([]);
         setSelectedMaterials([]);
       }
@@ -74,6 +80,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
 
   const resetForm = () => {
     setVideoPath('');
+    setCoverImages([]);
     setSelectedMaterialSkus([]);
     setSelectedMaterials([]);
     form.resetFields();
@@ -124,6 +131,12 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     handleMaterialsChange(newMaterialIds);
   };
 
+  const handleCoverImagesChange = (images: string[]) => {
+    console.log('images lllll');
+    setCoverImages(images);
+    form.setFieldsValue({ coverImages: images });
+  };
+
   const handleSubmit = async (values: ProjectFormValues) => {
 
     await onSubmit({
@@ -131,6 +144,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
       description: values.description?.trim() || '',
       materialIds: values.materialIds,
       videoPath: values.videoPath,
+      coverImages: values.coverImages,
       tags: values.tags,
       publishStatus: values.publishStatus,
       publishTime: values.publishTime ? dayjs(values.publishTime).format('YYYY-MM-DD HH:mm:ss') : undefined,
@@ -290,6 +304,16 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
               </>
             );
           }}
+        </Form.Item>
+
+        <Form.Item 
+          name="coverImages" 
+          label="备选封面"
+        >
+          <MultiImageUploader
+            initImageUrls={coverImages}
+            onImagesChange={handleCoverImagesChange}
+          />
         </Form.Item>
       </Form>
     </Modal>
