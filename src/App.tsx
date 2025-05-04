@@ -12,7 +12,9 @@ const App: React.FC = () => {
       <Router>
         <Layout style={{ minHeight: '100vh' }}>
           <AppHeader />
-          <AppContent />
+          <Layout style={{ marginTop: 64 }}>
+            <AppContent />
+          </Layout>
         </Layout>
       </Router>
     </>

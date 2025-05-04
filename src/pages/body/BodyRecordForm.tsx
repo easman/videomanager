@@ -6,10 +6,10 @@ import dayjs from 'dayjs';
 interface BodyRecordFormProps {
   modalVisible: boolean;
   setModalVisible: (visible: boolean) => void;
-  onSubmit: (values: Omit<BodyRecord, 'id' | 'modifiedTimes'>) => Promise<void>;
+  onSubmit: (values: Omit<BodyRecord, 'id'>, id?: number) => Promise<void>;
   submitting: boolean;
   initialData?: BodyRecord;
-  mode?: 'create' | 'edit';
+  mode: 'create' | 'edit';
 }
 
 interface BodyRecordFormValues {
@@ -23,6 +23,7 @@ interface BodyRecordFormValues {
   thighCircumference: number;
   armCircumference: number;
   measurementTime: string;
+  extraInfo: string;
 }
 
 const BodyRecordForm: React.FC<BodyRecordFormProps> = ({
@@ -31,7 +32,7 @@ const BodyRecordForm: React.FC<BodyRecordFormProps> = ({
   onSubmit,
   submitting,
   initialData,
-  mode = 'create'
+  mode
 }) => {
   const [form] = Form.useForm<BodyRecordFormValues>();
   const [measurementTimeOptions, setMeasurementTimeOptions] = React.useState<{ value: string }[]>([]);
@@ -68,12 +69,29 @@ const BodyRecordForm: React.FC<BodyRecordFormProps> = ({
     setModalVisible(false);
   };
 
-  const handleSubmit = async (values: BodyRecordFormValues) => {
-    await onSubmit({
-      ...values,
-      recordDate: values.recordDate.format('YYYY-MM-DD'),
-      measurementTime: values.measurementTime?.trim() || ''
-    });
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      const now = new Date().toISOString();
+      
+      if (mode === 'edit' && initialData?.id) {
+        await onSubmit({
+          ...values,
+          recordDate: values.recordDate.format('YYYY-MM-DD'),
+          measurementTime: values.measurementTime?.trim() || '',
+          modifiedTimes: [...(initialData.modifiedTimes || []), now]
+        }, initialData.id);
+      } else {
+        await onSubmit({
+          ...values,
+          recordDate: values.recordDate.format('YYYY-MM-DD'),
+          measurementTime: values.measurementTime?.trim() || '',
+          modifiedTimes: [now]
+        });
+      }
+    } catch (error) {
+      console.error('表单验证失败:', error);
+    }
   };
 
   return (
@@ -106,6 +124,7 @@ const BodyRecordForm: React.FC<BodyRecordFormProps> = ({
         <Form.Item
           name="height"
           label="身高(cm)"
+          initialValue={153}
           rules={[{ required: true, message: '请输入身高' }]}
         >
           <InputNumber
@@ -201,7 +220,7 @@ const BodyRecordForm: React.FC<BodyRecordFormProps> = ({
           />
         </Form.Item>
 
-        <Form.Item
+        <Form.Item  
           name="armCircumference"
           label="大臂围(cm)"
           rules={[{ required: true, message: '请输入大臂围' }]}
@@ -226,6 +245,12 @@ const BodyRecordForm: React.FC<BodyRecordFormProps> = ({
               option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
             }
           />
+        </Form.Item>
+        <Form.Item
+          name="extraInfo"
+          label="备注"
+        >
+          <Input.TextArea rows={4} />
         </Form.Item>
       </Form>
     </Modal>

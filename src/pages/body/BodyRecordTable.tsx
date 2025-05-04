@@ -17,12 +17,20 @@ interface BodyRecordTableProps {
   dataSource: BodyRecord[];
   onDelete: (id: number) => Promise<void>;
   onEdit: (record: BodyRecord) => void;
+  pagination: {
+    current: number;
+    pageSize: number;
+    total: number;
+  };
+  onTableChange: (pagination: any) => void;
 }
 
 const BodyRecordTable: React.FC<BodyRecordTableProps> = ({
   dataSource,
   onDelete,
-  onEdit
+  onEdit,
+  pagination,
+  onTableChange
 }) => {
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null);
 
@@ -154,11 +162,18 @@ const BodyRecordTable: React.FC<BodyRecordTableProps> = ({
   return (
     <Table 
       sticky={true}
-      scroll={{ x: 1400 }}
+      scroll={{ x: 1400, y: 'calc(100vh - 300px)' }}
       rowKey="id" 
       columns={columns} 
       dataSource={filteredData}
-      style={{ marginTop: 16 }}
+      style={{ width: '100%', marginTop: 16 }}
+      pagination={{
+        ...pagination,
+        showSizeChanger: true,
+        showQuickJumper: true,
+        showTotal: (total) => `共 ${total} 条`
+      }}
+      onChange={onTableChange}
       title={() => (
         <div style={{ 
           display: 'flex', 

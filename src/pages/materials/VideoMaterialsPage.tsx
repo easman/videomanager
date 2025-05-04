@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, message } from 'antd';
+import { Button, message, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { db, VideoMaterial, Sku } from '../../db';
 import VideoMaterialsForm from './VideoMaterialsForm';
@@ -12,6 +12,11 @@ const VideoMaterialsPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [currentMaterial, setCurrentMaterial] = useState<VideoMaterial | undefined>();
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
 
   useEffect(() => {
     fetchData();
@@ -24,6 +29,10 @@ const VideoMaterialsPage: React.FC = () => {
     ]);
     setMaterials(allMaterials);
     setSkus(allSkus);
+    setPagination(prev => ({
+      ...prev,
+      total: allMaterials.length
+    }));
   };
 
   const handleSubmit = async (values: Omit<VideoMaterial, 'id' | 'modifiedTimes'>) => {
@@ -76,17 +85,25 @@ const VideoMaterialsPage: React.FC = () => {
     setModalVisible(true);
   };
 
+  const handleTableChange = (pagination: any) => {
+    setPagination(pagination);
+  };
+
   return (
     <div>
-      <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-        添加素材
-      </Button>
+      <Space style={{ marginBottom: 16 }}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+          添加素材
+        </Button>
+      </Space>
 
       <VideoMaterialsTable 
         dataSource={materials}
         skus={skus}
         onDelete={handleDelete}
         onEdit={handleEdit}
+        pagination={pagination}
+        onTableChange={handleTableChange}
       />
 
       <VideoMaterialsForm

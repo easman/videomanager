@@ -15,6 +15,12 @@ interface ProjectTableProps {
   skus: Sku[];
   onDelete: (id: number) => Promise<void>;
   onEdit: (record: Project) => void;
+  pagination: {
+    current: number;
+    pageSize: number;
+    total: number;
+  };
+  onTableChange: (pagination: any) => void;
 }
 
 const ProjectTable: React.FC<ProjectTableProps> = ({
@@ -22,7 +28,9 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
   materials,
   skus,
   onDelete,
-  onEdit
+  onEdit,
+  pagination,
+  onTableChange
 }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -271,11 +279,18 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
   return (
     <Table 
       sticky={true} 
-      scroll={{ x: 1200 }}
+      scroll={{ x: 1400, y: 'calc(100vh - 300px)' }}
       rowKey="id" 
       columns={columns} 
       dataSource={filteredData} 
-      style={{ marginTop: 16 }}
+      style={{ width: '100%', marginTop: 16 }}
+      pagination={{
+        ...pagination,
+        showSizeChanger: true,
+        showQuickJumper: true,
+        showTotal: (total) => `共 ${total} 条`
+      }}
+      onChange={onTableChange}
       title={() => (
         <div style={{ 
           display: 'flex', 

@@ -1,98 +1,98 @@
-import React, { useState, useEffect } from 'react';
-import { Button, message } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Button, message, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { db, BodyRecord } from '../../db';
-import BodyRecordTable from './BodyRecordTable';
 import BodyRecordForm from './BodyRecordForm';
+import BodyRecordTable from './BodyRecordTable';
+import dayjs from 'dayjs';
 
 const BodyRecordPage: React.FC = () => {
   const [records, setRecords] = useState<BodyRecord[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<BodyRecord>();
+  const [currentRecord, setCurrentRecord] = useState<BodyRecord | undefined>();
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
 
-  // 加载数据
-  const loadData = async () => {
-    const data = await db.bodyRecords.toArray();
-    setRecords(data);
+  const fetchData = async () => {
+    const allRecords = await db.bodyRecords.toArray();
+    setRecords(allRecords.filter((record): record is BodyRecord => record.id !== undefined));
+    setPagination(prev => ({
+      ...prev,
+      total: allRecords.length
+    }));
   };
 
   useEffect(() => {
-    loadData();
+    fetchData();
   }, []);
 
-  // 处理添加/编辑提交
-  const handleSubmit = async (values: Omit<BodyRecord, 'id' | 'modifiedTimes'>) => {
+  const handleSubmit = async (values: Omit<BodyRecord, 'id'>, id?: number) => {
+    setSubmitting(true);
     try {
-      setSubmitting(true);
-      const now = new Date().toISOString();
-
-      if (editingRecord) {
+      if (id) {
         // 编辑模式
-        await db.bodyRecords.update(editingRecord.id as number, {
-          ...values,
-          modifiedTimes: [...editingRecord.modifiedTimes, now]
-        });
-        message.success('编辑成功');
+        await db.bodyRecords.update(id, values);
+        message.success('更新成功');
       } else {
         // 新增模式
-        await db.bodyRecords.add({
-          ...values,
-          modifiedTimes: [now]
-        });
+        await db.bodyRecords.add(values);
         message.success('添加成功');
       }
-
+      
       setModalVisible(false);
-      loadData();
+      fetchData();
     } catch (error) {
-      console.error('保存失败:', error);
-      message.error('保存失败: ' + (error as Error).message);
+      message.error((id ? '更新' : '添加') + '失败：' + (error as Error).message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // 处理删除
+  const handleEdit = (record: BodyRecord) => {
+    setCurrentRecord(record);
+    setFormMode('edit');
+    setModalVisible(true);
+  };
+
+  const handleAdd = () => {
+    setCurrentRecord(undefined);
+    setFormMode('create');
+    setModalVisible(true);
+  };
+
   const handleDelete = async (id: number) => {
     try {
       await db.bodyRecords.delete(id);
       message.success('删除成功');
-      loadData();
+      fetchData();
     } catch (error) {
-      console.error('删除失败:', error);
       message.error('删除失败: ' + (error as Error).message);
     }
   };
 
-  // 处理编辑
-  const handleEdit = (record: BodyRecord) => {
-    setEditingRecord(record);
-    setModalVisible(true);
-  };
-
-  // 处理添加按钮点击
-  const handleAdd = () => {
-    setEditingRecord(undefined);
-    setModalVisible(true);
+  const handleTableChange = (pagination: any) => {
+    setPagination(pagination);
   };
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: 16 }}>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />}
-          onClick={handleAdd}
-        >
+    <div>
+      <Space style={{ marginBottom: 16 }}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           添加记录
         </Button>
-      </div>
+      </Space>
 
-      <BodyRecordTable
+      <BodyRecordTable 
         dataSource={records}
         onDelete={handleDelete}
         onEdit={handleEdit}
+        pagination={pagination}
+        onTableChange={handleTableChange}
       />
 
       <BodyRecordForm
@@ -100,8 +100,8 @@ const BodyRecordPage: React.FC = () => {
         setModalVisible={setModalVisible}
         onSubmit={handleSubmit}
         submitting={submitting}
-        initialData={editingRecord}
-        mode={editingRecord ? 'edit' : 'create'}
+        initialData={currentRecord}
+        mode={formMode}
       />
     </div>
   );

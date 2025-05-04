@@ -10,7 +10,12 @@ const AppHeader: React.FC = () => {
   const currentPath = location.pathname.split('/')[1] || 'sku';
 
   return (
-    <Header>
+    <Header style={{ 
+      position: 'fixed', 
+      zIndex: 1, 
+      width: '100%',
+      padding: '0 24px'
+    }}>
       <Menu theme="dark" mode="horizontal" selectedKeys={[currentPath]}>
         <Menu.Item key="sku">
           <Link to="/sku">服饰管理</Link>

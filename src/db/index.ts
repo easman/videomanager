@@ -51,6 +51,7 @@ export interface BodyRecord {
   thighCircumference: number; // 大腿围(cm)
   armCircumference: number; // 大臂围(cm)
   measurementTime: string; // 测量时间描述
+  extraInfo: string; // 额外信息
   modifiedTimes: string[]; // 修改时间列表，第一个是创建时间
 }
 
