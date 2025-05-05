@@ -17,12 +17,6 @@ interface ProjectTableProps {
   skus: Sku[];
   onDelete: (id: number) => Promise<void>;
   onEdit: (record: Project) => void;
-  pagination: {
-    current: number;
-    pageSize: number;
-    total: number;
-  };
-  onTableChange: (pagination: any) => void;
 }
 
 const ProjectTable: React.FC<ProjectTableProps> = ({
@@ -31,8 +25,6 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
   skus,
   onDelete,
   onEdit,
-  pagination,
-  onTableChange
 }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -359,13 +351,6 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       columns={columns} 
       dataSource={filteredData} 
       style={{ width: '100%', marginTop: 16 }}
-      pagination={{
-        ...pagination,
-        showSizeChanger: true,
-        showQuickJumper: true,
-        showTotal: (total) => `共 ${total} 条`
-      }}
-      onChange={onTableChange}
       title={() => (
         <div style={{ 
           display: 'flex', 

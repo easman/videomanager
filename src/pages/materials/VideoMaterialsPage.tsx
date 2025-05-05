@@ -12,11 +12,6 @@ const VideoMaterialsPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [currentMaterial, setCurrentMaterial] = useState<VideoMaterial | undefined>();
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0
-  });
 
   useEffect(() => {
     fetchData();
@@ -29,10 +24,6 @@ const VideoMaterialsPage: React.FC = () => {
     ]);
     setMaterials(allMaterials);
     setSkus(allSkus);
-    setPagination(prev => ({
-      ...prev,
-      total: allMaterials.length
-    }));
   };
 
   const handleSubmit = async (values: Omit<VideoMaterial, 'id' | 'modifiedTimes'>) => {
@@ -85,10 +76,6 @@ const VideoMaterialsPage: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleTableChange = (pagination: any) => {
-    setPagination(pagination);
-  };
-
   return (
     <div>
       <Space style={{ marginBottom: 16 }}>
@@ -102,8 +89,6 @@ const VideoMaterialsPage: React.FC = () => {
         skus={skus}
         onDelete={handleDelete}
         onEdit={handleEdit}
-        pagination={pagination}
-        onTableChange={handleTableChange}
       />
 
       <VideoMaterialsForm

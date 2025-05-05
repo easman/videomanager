@@ -4,7 +4,6 @@ import { PlusOutlined } from '@ant-design/icons';
 import { db, BodyRecord } from '../../db';
 import BodyRecordForm from './BodyRecordForm';
 import BodyRecordTable from './BodyRecordTable';
-import dayjs from 'dayjs';
 
 const BodyRecordPage: React.FC = () => {
   const [records, setRecords] = useState<BodyRecord[]>([]);
@@ -12,19 +11,10 @@ const BodyRecordPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [currentRecord, setCurrentRecord] = useState<BodyRecord | undefined>();
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0
-  });
 
   const fetchData = async () => {
     const allRecords = await db.bodyRecords.toArray();
     setRecords(allRecords.filter((record): record is BodyRecord => record.id !== undefined));
-    setPagination(prev => ({
-      ...prev,
-      total: allRecords.length
-    }));
   };
 
   useEffect(() => {
@@ -75,10 +65,6 @@ const BodyRecordPage: React.FC = () => {
     }
   };
 
-  const handleTableChange = (pagination: any) => {
-    setPagination(pagination);
-  };
-
   return (
     <div>
       <Space style={{ marginBottom: 16 }}>
@@ -91,8 +77,6 @@ const BodyRecordPage: React.FC = () => {
         dataSource={records}
         onDelete={handleDelete}
         onEdit={handleEdit}
-        pagination={pagination}
-        onTableChange={handleTableChange}
       />
 
       <BodyRecordForm

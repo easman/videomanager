@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Tag, Space, Popconfirm, Modal, Input, message, Tooltip } from 'antd';
-import type { ColumnType } from 'antd/es/table';
 import { DeleteOutlined, EditOutlined, SearchOutlined, LinkOutlined } from '@ant-design/icons';
 import { VideoMaterial, Sku, db } from '../../db';
 import SkuTags from '../../components/SkuTags';
@@ -12,12 +11,6 @@ interface VideoMaterialsTableProps {
   skus: Sku[];
   onDelete: (id: number) => Promise<void>;
   onEdit: (record: VideoMaterial) => void;
-  pagination: {
-    current: number;
-    pageSize: number;
-    total: number;
-  };
-  onTableChange: (pagination: any) => void;
 }
 
 interface ReferenceInfo {
@@ -30,8 +23,6 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
   skus,
   onDelete,
   onEdit,
-  pagination,
-  onTableChange
 }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -331,13 +322,6 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
       columns={columns} 
       dataSource={filteredData}
       style={{ width: '100%', marginTop: 16 }}
-      pagination={{
-        ...pagination,
-        showSizeChanger: true,
-        showQuickJumper: true,
-        showTotal: (total) => `共 ${total} 条`
-      }}
-      onChange={onTableChange}
       title={() => (
         <div style={{ 
           display: 'flex', 

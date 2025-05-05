@@ -14,11 +14,7 @@ const ProjectsPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [currentProject, setCurrentProject] = useState<Project | undefined>();
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0
-  });
+
 
   const fetchData = async () => {
     const [allProjects, allSkus, allMaterials] = await Promise.all([
@@ -29,10 +25,6 @@ const ProjectsPage: React.FC = () => {
     setProjects(allProjects.filter((project): project is Project => project.id !== undefined));
     setSkus(allSkus);
     setMaterials(allMaterials);
-    setPagination(prev => ({
-      ...prev,
-      total: allProjects.length
-    }));
   };
 
   useEffect(() => {
@@ -110,10 +102,6 @@ const ProjectsPage: React.FC = () => {
     }
   };
 
-  const handleTableChange = (pagination: any) => {
-    setPagination(pagination);
-  };
-
   return (
     <div>
       <Space style={{ marginBottom: 16 }}>
@@ -128,8 +116,6 @@ const ProjectsPage: React.FC = () => {
         skus={skus}
         onDelete={handleDelete}
         onEdit={handleEdit}
-        pagination={pagination}
-        onTableChange={handleTableChange}
       />
 
       <ProjectForm
