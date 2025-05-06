@@ -1,0 +1,44 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TypeScript 与 Electron IPC 类型定义
+
+## 类型定义位置
+
+项目中的 Electron IPC 类型定义位于 [src/types/electron.d.ts](mdc:src/types/electron.d.ts)。这个文件定义了所有可用的 IPC 通信接口类型。
+
+## 常见的类型错误
+
+在使用 `window.electronAPI` 时，可能会遇到以下 TypeScript 错误：
+
+```typescript
+Property 'electronAPI' does not exist on type 'Window & typeof globalThis'
+```
+
+这个错误是正常的，原因是：
+1. 编辑器可能没有正确加载 `electron.d.ts` 文件
+2. TypeScript 语言服务器需要重新加载才能识别新的类型定义
+
+## 解决方案
+
+1. 确保 `electron.d.ts` 文件被正确引用：
+   - 文件位于 [src/types/electron.d.ts](mdc:src/types/electron.d.ts)
+   - 类型定义使用了 `declare global` 来扩展全局 `Window` 接口
+
+2. 在使用 `window.electronAPI` 的文件中，可以忽略这个特定的 lint 错误，因为类型实际上是存在的
+
+3. 如果需要在特定文件中消除这个错误，可以在文件顶部添加类型引用：
+```typescript
+/// <reference path="../types/electron.d.ts" />
+```
+
+## 示例用法
+
+在 [src/pages/sku/SkuPage.tsx](mdc:src/pages/sku/SkuPage.tsx) 中的使用示例：
+```typescript
+// 调用 IPC 接口
+const dir = await window.electronAPI.getAppImagesDir();
+const saveResult = await window.electronAPI.saveImage(values.image);
+```
