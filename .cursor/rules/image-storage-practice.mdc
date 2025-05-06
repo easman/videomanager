@@ -1,0 +1,96 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 图片存储最佳实践
+
+## 基本原则
+
+1. 图片文件应该保存在本地文件系统中，而不是数据库中
+2. 数据库中只存储图片的相对路径或引用
+3. 使用 Electron IPC 接口处理图片保存
+
+## 图片保存流程
+
+1. 获取应用图片存储目录
+```typescript
+const imagesDir = await window.electronAPI.getAppImagesDir();
+```
+
+2. 保存单张图片示例（来自 [src/pages/sku/SkuPage.tsx](mdc:src/pages/sku/SkuPage.tsx)）：
+```typescript
+// 处理图片保存
+let finalImagePath = '';
+if (values.image) {
+  // 如果是编辑模式且图片路径没有改变，直接使用原文件名
+  if (id && values.image === currentSku?.image) {
+    finalImagePath = values.image.split('/').pop() || values.image.split('\\').pop() || values.image;
+  } else {
+    const saveResult = await window.electronAPI.saveImage(values.image);
+    if (!saveResult.success) {
+      message.error(`图片保存失败: ${saveResult.message}`);
+      return;
+    }
+    // 只保存文件名
+    finalImagePath = saveResult.path.split('/').pop() || saveResult.path.split('\\').pop() || saveResult.path;
+  }
+}
+
+// 保存到数据库时只存储文件名
+const skuData = {
+  ...values,
+  image: finalImagePath
+};
+```
+
+3. 批量保存图片示例（来自 [src/pages/project/ProjectPage.tsx](mdc:src/pages/project/ProjectPage.tsx)）：
+```typescript
+// 处理封面图片保存
+const savedCoverImages = await Promise.all(
+  (values?.coverImages || []).map(async (img) => {
+    if (img.startsWith('data:')) {
+      const result = await window.electronAPI.saveImage(img);
+      if (!result.success) {
+        throw new Error('保存封面图片失败：' + result.message);
+      }
+      return result.path;
+    }
+    return img;
+  })
+);
+
+// 保存到数据库
+await db.projects.update(id, {
+  ...values,
+  coverImages: savedCoverImages,
+  // ... other fields
+});
+```
+
+## 注意事项
+
+1. 图片路径处理：
+   - 保存到数据库时只存储文件名，不存储完整路径
+   - 显示时拼接完整路径：`${imagesDir}/${imageName}`
+
+2. 编辑模式处理：
+   - 检查图片是否已经改变
+   - 如果没有改变，保留原有文件名
+   - 如果改变了，保存新图片并更新引用
+
+3. 错误处理：
+   - 检查保存结果的 `success` 状态
+   - 显示具体的错误信息
+   - 在保存失败时中断操作
+
+4. 批量操作：
+   - 使用 `Promise.all` 处理多张图片
+   - 确保所有图片都保存成功
+   - 任一图片保存失败时抛出错误
+
+## 禁止事项
+
+1. ❌ 不要将 base64 字符串存储到数据库中
+2. ❌ 不要存储完整的文件系统路径
+3. ❌ 不要在数据库中存储图片二进制数据
