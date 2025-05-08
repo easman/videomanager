@@ -1,0 +1,113 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Electron 主进程功能规范
+
+## 文件结构
+
+主进程相关代码位于 [electron/main.js](mdc:electron/main.js) 和 [electron/preload.js](mdc:electron/preload.js)。
+
+## 功能模块划分
+
+### 1. 文件系统操作
+```typescript
+// 文件操作相关 IPC 接口
+{
+  selectFolder: () => Promise<string>;  // 选择文件夹
+  openFolder: (path: string) => Promise<{ success: boolean; message?: string }>;  // 打开文件夹
+  saveImage: (base64: string) => Promise<{ success: boolean; path: string; message?: string }>;  // 保存图片
+  getAppImagesDir: () => Promise<string>;  // 获取应用图片目录
+}
+```
+
+### 2. 设备管理
+```typescript
+// 设备管理相关 IPC 接口
+{
+  checkIPhoneConnection: () => Promise<boolean>;  // 检查 iPhone 连接状态
+  listIPhoneVideos: () => Promise<VideoInfo[]>;  // 列出 iPhone 中的视频
+  transferVideos: (selections: VideoSelection[]) => Promise<TransferResult>;  // 传输视频
+}
+```
+
+### 3. 应用配置
+```typescript
+// 应用配置相关 IPC 接口
+{
+  getAppConfig: () => Promise<AppConfig>;  // 获取应用配置
+  saveAppConfig: (config: AppConfig) => Promise<void>;  // 保存应用配置
+}
+```
+
+## 开发规范
+
+### 1. IPC 通信规范
+
+- 所有 IPC 接口必须在 `preload.js` 中声明类型
+- 使用 `handle/invoke` 而不是 `on/send` 进行异步通信
+- 返回统一的响应格式：
+```typescript
+interface IPCResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+}
+```
+
+### 2. 错误处理
+
+- 主进程错误必须被捕获并返回给渲染进程
+- 使用统一的错误码和错误信息
+- 关键操作需要记录日志
+
+### 3. 资源管理
+
+- 及时清理临时文件
+- 正确关闭打开的文件句柄
+- 释放不再使用的系统资源
+
+## 示例代码
+
+### 1. 主进程处理器
+```typescript
+// electron/main.js
+ipcMain.handle('selectFolder', async () => {
+  try {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory']
+    });
+    return result.filePaths[0];
+  } catch (error) {
+    return null;
+  }
+});
+```
+
+### 2. Preload 脚本
+```typescript
+// electron/preload.js
+contextBridge.exposeInMainWorld('electronAPI', {
+  selectFolder: () => ipcRenderer.invoke('selectFolder'),
+  // ... 其他接口
+});
+```
+
+## 注意事项
+
+1. ❌ 禁止在主进程中直接操作 UI
+2. ❌ 避免在主进程中进行耗时操作
+3. ❌ 不要在主进程中存储业务数据
+4. ✅ 使用 worker 处理耗时任务
+5. ✅ 实现错误重试机制
+6. ✅ 提供操作进度反馈
+
+## 新功能开发流程
+
+1. 在主进程中实现核心功能
+2. 在 `preload.js` 中定义接口类型
+3. 在渲染进程中调用接口
+4. 实现错误处理和进度反馈
+5. 添加日志记录
+6. 进行功能测试

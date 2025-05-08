@@ -1,5 +1,108 @@
 ---
-description:
-globs:
-alwaysApply: false
+description: 
+globs: 
+alwaysApply: true
 ---
+# 数据库操作最佳实践
+
+## 数据库结构
+
+项目使用 Dexie.js 作为 IndexedDB 的封装库，主要数据表定义在 [src/db/index.ts](mdc:src/db/index.ts) 中：
+
+- `skus`: 服饰商品信息表
+- `videoMaterials`: 视频素材表
+- `projects`: 项目表
+- `bodyRecords`: 身材记录表
+
+## 数据操作规范
+
+### 1. 数据创建
+
+创建新记录时必须包含 `modifiedTimes` 字段：
+
+```typescript
+const newRecord = {
+  ...otherFields,
+  modifiedTimes: [new Date().toISOString()] // 第一个时间为创建时间
+};
+await db.skus.add(newRecord);
+```
+
+### 2. 数据更新
+
+更新记录时必须追加修改时间：
+
+```typescript
+const record = await db.skus.get(id);
+if (record) {
+  await db.skus.update(id, {
+    ...newData,
+    modifiedTimes: [...record.modifiedTimes, new Date().toISOString()]
+  });
+}
+```
+
+### 3. 关联数据处理
+
+- 使用数字 ID 数组存储关联关系（如 `skuIds`, `materialIds`）
+- 删除记录前检查关联引用
+- 更新关联数据时使用事务确保数据一致性
+
+```typescript
+await db.transaction('rw', [db.projects, db.videoMaterials], async () => {
+  // 在事务中执行多个操作
+  await db.projects.update(projectId, { materialIds: [...] });
+  await db.videoMaterials.update(materialId, { ...updates });
+});
+```
+
+### 4. 数据库版本升级
+
+- 版本升级必须在 [src/db/index.ts](mdc:src/db/index.ts) 中定义
+- 使用 `upgrade` 函数处理数据迁移
+- 为新增字段提供默认值
+
+```typescript
+this.version(n).stores({
+  // 表结构定义
+}).upgrade(async (trans) => {
+  // 数据迁移逻辑
+});
+```
+
+## 字段类型规范
+
+### Sku 表
+- `id`: 自增主键
+- `name`: 商品名称（必填）
+- `image`: 仅存储图片文件名
+- `returned`: 布尔值，默认 false
+- `modifiedTimes`: 字符串数组，存储 ISO 格式时间戳
+
+### VideoMaterial 表
+- `id`: 自增主键
+- `filePath`: 本地文件路径
+- `skuIds`: 数字数组，关联的服饰 ID
+- `modifiedTimes`: 字符串数组
+
+### Project 表
+- `id`: 自增主键
+- `materialIds`: 数字数组，关联的素材 ID
+- `publishStatus`: 限定值 '未编辑' | '编辑中' | '待发布' | '已发布'
+- `coverImages`: 字符串数组，存储图片文件名
+- `modifiedTimes`: 字符串数组
+
+### BodyRecord 表
+- `id`: 自增主键
+- `recordDate`: 日期字符串
+- 各项身体数据使用 number 类型
+- `modifiedTimes`: 字符串数组
+
+## 注意事项
+
+1. ❌ 禁止直接修改数据库结构，必须通过版本升级机制
+2. ❌ 不要在数据库中存储完整的文件系统路径
+3. ❌ 不要跳过数据验证直接写入数据库
+4. ✅ 总是使用事务处理多表操作
+5. ✅ 确保所有必填字段都有合适的默认值
+6. ✅ 在更新操作前先检查记录是否存在
