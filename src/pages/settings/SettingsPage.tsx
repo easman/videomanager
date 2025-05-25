@@ -10,7 +10,7 @@ const SettingsPage: React.FC = () => {
   const [devToolsEnabled, setDevToolsEnabled] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-
+  
   // 获取开发者工具状态
   useEffect(() => {
     const checkDevTools = async () => {

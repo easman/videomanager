@@ -76,3 +76,8 @@
 - `electron/` - Electron主进程代码
 - `src/db/` - Dexie数据库模型定义
 - `src/pages/` - 应用页面组件 
+
+
+
+无签名时，安装后运行 
+xattr -cr /path/to/VideoManager.dmg

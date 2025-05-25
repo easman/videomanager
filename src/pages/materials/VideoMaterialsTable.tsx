@@ -321,6 +321,11 @@ const VideoMaterialsTable: React.FC<VideoMaterialsTableProps> = ({
       rowKey="id" 
       columns={columns} 
       dataSource={filteredData}
+      pagination={{
+        showTotal: total => `共 ${total} 条`,
+        showSizeChanger: true,
+        showQuickJumper: true
+      }}
       style={{ width: '100%', marginTop: 16 }}
       title={() => (
         <div style={{ 

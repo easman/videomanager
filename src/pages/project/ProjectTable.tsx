@@ -129,6 +129,33 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       key: 'name',
       width: nameColumnWidth
     },
+    { 
+      title: '状态', 
+      dataIndex: 'publishStatus', 
+      key: 'publishStatus',
+      width: 120,
+      filters: [
+        { text: '未编辑', value: '未编辑' },
+        { text: '编辑中', value: '编辑中' },
+        { text: '待发布', value: '待发布' },
+        { text: '已发布', value: '已发布' }
+      ],
+      onFilter: (value: React.Key, record: Project) => 
+        record.publishStatus === value,
+      render: (status: string) => {
+        const colorMap = {
+          '未编辑': '#8c8c8c',
+          '编辑中': '#1890ff',
+          '待发布': '#faad14',
+          '已发布': '#52c41a'
+        };
+        return (
+          <span style={{ color: colorMap[status as keyof typeof colorMap] }}>
+            {status}
+          </span>
+        );
+      }
+    } as ColumnType<Project>,
     {
       title: '正文',
       dataIndex: 'description',
@@ -139,7 +166,12 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
           fontSize: '12px',
           color: '#8c8c8c',
           whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word'
+          wordBreak: 'break-word',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 4,
+          WebkitBoxOrient: 'vertical'
         }}>
           {text || '-'}
         </div>
@@ -155,7 +187,10 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
           fontSize: '12px',
           color: '#8c8c8c',
           whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word'
+          wordBreak: 'break-word',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxHeight: '100px'
         }}>
           {tags || '-'}
         </div>
@@ -276,33 +311,6 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       }
     },
     { 
-      title: '状态', 
-      dataIndex: 'publishStatus', 
-      key: 'publishStatus',
-      width: 120,
-      filters: [
-        { text: '未编辑', value: '未编辑' },
-        { text: '编辑中', value: '编辑中' },
-        { text: '待发布', value: '待发布' },
-        { text: '已发布', value: '已发布' }
-      ],
-      onFilter: (value: React.Key, record: Project) => 
-        record.publishStatus === value,
-      render: (status: string) => {
-        const colorMap = {
-          '未编辑': '#8c8c8c',
-          '编辑中': '#1890ff',
-          '待发布': '#faad14',
-          '已发布': '#52c41a'
-        };
-        return (
-          <span style={{ color: colorMap[status as keyof typeof colorMap] }}>
-            {status}
-          </span>
-        );
-      }
-    } as ColumnType<Project>,
-    { 
       title: '发布时间', 
       dataIndex: 'publishTime', 
       key: 'publishTime',
@@ -348,6 +356,11 @@ const ProjectTable: React.FC<ProjectTableProps> = ({
       sticky={true} 
       scroll={{ x: 1400, y: 'calc(100vh - 300px)' }}
       rowKey="id" 
+      pagination={{
+        showTotal: total => `共 ${total} 条`,
+        showSizeChanger: true,
+        showQuickJumper: true
+      }}
       columns={columns} 
       dataSource={filteredData} 
       style={{ width: '100%', marginTop: 16 }}
