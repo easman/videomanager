@@ -1,24 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Space, Modal, message, Switch, InputNumber, Row, Col, Typography } from 'antd';
-import { ExclamationCircleOutlined, CloudServerOutlined, UsbOutlined } from '@ant-design/icons';
+import { Card, Button, Space, Modal, message, Switch } from 'antd';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { db } from '../../db';
 import { exportDB, importDB } from 'dexie-export-import';
 
 const { confirm } = Modal;
-const { Text } = Typography;
 
 const SettingsPage: React.FC = () => {
   const [devToolsEnabled, setDevToolsEnabled] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  
-  // USB 和 HTTP 服务相关状态
-  const [httpServerRunning, setHttpServerRunning] = useState(false);
-  const [httpPort, setHttpPort] = useState(3001);       // HTTP 服务器端口 - 默认为 3001
-  const [loading, setLoading] = useState({
-    startHttp: false,
-    stopHttp: false,
-  });
   
   // 获取开发者工具状态
   useEffect(() => {
@@ -28,49 +19,6 @@ const SettingsPage: React.FC = () => {
     };
     checkDevTools();
   }, []);
-
-  // 启动 HTTP 服务器
-  const startHttpServer = async () => {
-    try {
-      setLoading(prev => ({ ...prev, startHttp: true }));
-      
-      // 配置服务器使用不同的端口
-      await window.electronAPI.configureHttpServer({
-        port: httpPort // 使用设置的主机端口
-      });
-      
-      // 启动服务器
-      const result = await window.electronAPI.startHttpServer();
-      if (result.success) {
-        message.success('HTTP 服务器已启动');
-        setHttpServerRunning(true);
-      } else {
-        message.error(`启动失败: ${result.message}`);
-      }
-    } catch (error) {
-      message.error('启动 HTTP 服务器失败: ' + (error as Error).message);
-    } finally {
-      setLoading(prev => ({ ...prev, startHttp: false }));
-    }
-  };
-
-  // 停止 HTTP 服务器
-  const stopHttpServer = async () => {
-    try {
-      setLoading(prev => ({ ...prev, stopHttp: true }));
-      const result = await window.electronAPI.stopHttpServer();
-      if (result.success) {
-        message.success('HTTP 服务器已停止');
-        setHttpServerRunning(false);
-      } else {
-        message.error(`停止失败: ${result.message}`);
-      }
-    } catch (error) {
-      message.error('停止 HTTP 服务器失败: ' + (error as Error).message);
-    } finally {
-      setLoading(prev => ({ ...prev, stopHttp: false }));
-    }
-  };
 
   // 处理开发者工具开关
   const handleDevToolsToggle = async (checked: boolean) => {
@@ -190,55 +138,6 @@ const SettingsPage: React.FC = () => {
       <h2 style={{ marginBottom: 24 }}>系统设置</h2>
       
       <Space direction="vertical" size="large" style={{ display: 'flex' }}>
-        <Card 
-          title={
-            <Space>
-              <UsbOutlined />
-              <span>视频上传测试服务</span>
-            </Space>
-          } 
-          style={{ maxWidth: 800 }}
-        >
-          <Row gutter={16} align="middle">
-            <Col span={4}>HTTP 端口:</Col>
-            <Col span={6}>
-              <InputNumber 
-                min={1024} 
-                max={65535} 
-                value={httpPort} 
-                onChange={(value) => setHttpPort(value as number)} 
-                disabled={httpServerRunning}
-              />
-            </Col>
-            <Col span={14}>
-              <Text type="secondary">HTTP 服务器监听端口，建议设置为 3001 避免冲突</Text>
-            </Col>
-          </Row>
-          
-          <div style={{ marginTop: 16 }}>
-            <Space>
-              <Button 
-                type="primary" 
-                icon={<CloudServerOutlined />} 
-                onClick={startHttpServer} 
-                loading={loading.startHttp}
-                disabled={httpServerRunning}
-              >
-                启动 HTTP 服务器
-              </Button>
-              
-              <Button 
-                danger 
-                onClick={stopHttpServer} 
-                loading={loading.stopHttp}
-                disabled={!httpServerRunning}
-              >
-                停止 HTTP 服务器
-              </Button>
-            </Space>
-          </div>
-        </Card>
-
         <Card title="数据管理" style={{ maxWidth: 800 }}>
           <Space direction="vertical" style={{ width: '100%' }}>
             <div>

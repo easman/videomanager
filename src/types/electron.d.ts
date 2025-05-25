@@ -12,16 +12,6 @@ interface ElectronAPI {
   // 数据导入导出相关 API
   exportData: (dbData: string) => Promise<{ success: boolean; message?: string }>;
   importData: () => Promise<{ success: boolean; dbData?: string; message?: string }>;
-  
-  // HTTP 服务相关 API
-  configureHttpServer: (options: { port?: number; uploadDir?: string }) => Promise<{ success: boolean; message?: string }>;
-  startHttpServer: () => Promise<{ 
-    success: boolean; 
-    message?: string;
-    port?: number;
-    uploadDir?: string;
-  }>;
-  stopHttpServer: () => Promise<{ success: boolean; message?: string }>;
 }
 
 declare interface Window {

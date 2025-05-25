@@ -4,8 +4,6 @@ const fs = require('fs');
 const crypto = require('crypto');
 const archiver = require('archiver');
 const extract = require('extract-zip');
-const httpServer = require('./http-server');
-const { exec } = require('child_process');
 
 // 判断是否是开发环境
 const isDev = !app.isPackaged;
@@ -323,26 +321,6 @@ ipcMain.handle('show-file-in-folder', async (event, filePath) => {
       message: error.message 
     };
   }
-});
-
-// 配置 HTTP 服务器
-ipcMain.handle('configure-http-server', async (event, options) => {
-  return httpServer.configure(options);
-});
-
-// 启动 HTTP 服务器
-ipcMain.handle('start-http-server', async () => {
-  return await httpServer.start();
-});
-
-// 停止 HTTP 服务器
-ipcMain.handle('stop-http-server', async () => {
-  return await httpServer.stop();
-});
-
-// 在应用关闭时清理资源
-app.on('will-quit', () => {
-  httpServer.stop();
 });
 
 app.whenReady().then(() => {

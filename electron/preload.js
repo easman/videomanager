@@ -15,9 +15,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 添加数据导入导出相关 API
   exportData: (dbData) => ipcRenderer.invoke('exportData', dbData),
   importData: () => ipcRenderer.invoke('importData'),
-  
-  // HTTP 服务相关 API
-  configureHttpServer: (options) => ipcRenderer.invoke('configure-http-server', options),
-  startHttpServer: () => ipcRenderer.invoke('start-http-server'),
-  stopHttpServer: () => ipcRenderer.invoke('stop-http-server'),
 }); 
