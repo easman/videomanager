@@ -355,27 +355,6 @@ ipcMain.handle('stop-http-server', async () => {
   return await httpServer.stop();
 });
 
-// 添加命令执行功能，用于调试
-ipcMain.handle('execute-command', async (event, command) => {
-  try {
-    console.log(`[命令] 执行: ${command}`);
-    return new Promise((resolve) => {
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`[命令] 执行错误: ${error.message}`);
-          resolve({ success: false, error: error.message, stderr, command });
-        } else {
-          console.log(`[命令] 输出: ${stdout}`);
-          resolve({ success: true, stdout, stderr, command });
-        }
-      });
-    });
-  } catch (error) {
-    console.error(`[命令] 异常: ${error.message}`);
-    return { success: false, error: error.message, command };
-  }
-});
-
 // 在应用关闭时清理资源
 app.on('will-quit', () => {
   httpServer.stop();
