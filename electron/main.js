@@ -108,21 +108,6 @@ ipcMain.handle('select-file', async () => {
   return null;
 });
 
-// 处理选择图片文件
-ipcMain.handle('select-image', async () => {
-  const result = await dialog.showOpenDialog({
-    properties: ['openFile'],
-    filters: [
-      { name: '图片文件', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }
-    ]
-  });
-  
-  if (!result.canceled) {
-    return result.filePaths[0];
-  }
-  return null;
-});
-
 // 保存图片数据到应用缓存目录
 ipcMain.handle('save-image', async (event, imageData, fileName) => {
   try {

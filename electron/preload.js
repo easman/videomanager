@@ -4,7 +4,6 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   selectFolder: () => ipcRenderer.invoke('select-folder'),
   selectFile: () => ipcRenderer.invoke('select-file'),
-  selectImage: () => ipcRenderer.invoke('select-image'),
   saveImage: (imageData, fileName) => ipcRenderer.invoke('save-image', imageData, fileName),
   getAppImagesDir: () => ipcRenderer.invoke('get-app-images-dir'),
   clearDirectory: (dirPath) => ipcRenderer.invoke('clear-directory', dirPath),
