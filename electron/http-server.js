@@ -4,7 +4,6 @@ const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 const { app } = require('electron');
-const usbMuxService = require('./usbmux-service');
 
 class HttpServer {
   constructor() {
@@ -140,7 +139,7 @@ class HttpServer {
         <body>
           <h1>连接成功！</h1>
           <div class="success">
-            <p>🎉 恭喜！您已成功通过 USB 连接到服务器。</p>
+            <p>🎉 恭喜！您已成功连接到服务器。</p>
             <p>服务器当前时间: ${new Date().toLocaleString()}</p>
             <p>服务器端口: ${this._port}</p>
           </div>
@@ -210,7 +209,6 @@ class HttpServer {
           console.log(`[HTTP] 本地访问地址: http://localhost:${this._port}`);
           console.log(`[HTTP] 网络访问地址: ${addresses.map(ip => `http://${ip}:${this._port}`).join(', ') || '无'}`);
           
-          usbMuxService.setServerRunning(true);
           resolve({
             success: true,
             message: '服务器已启动',
@@ -224,7 +222,6 @@ class HttpServer {
         this._server.on('error', (error) => {
           console.error('启动 HTTP 服务器失败:', error);
           this._server = null;
-          usbMuxService.setServerRunning(false);
           resolve({
             success: false,
             message: `启动服务器失败: ${error.message}`
@@ -232,7 +229,6 @@ class HttpServer {
         });
       } catch (error) {
         console.error('启动 HTTP 服务器时发生异常:', error);
-        usbMuxService.setServerRunning(false);
         resolve({
           success: false,
           message: `启动服务器异常: ${error.message}`
@@ -259,7 +255,6 @@ class HttpServer {
         } else {
           console.log('HTTP 服务器已停止');
           this._server = null;
-          usbMuxService.setServerRunning(false);
           resolve({
             success: true,
             message: '服务器已停止'
