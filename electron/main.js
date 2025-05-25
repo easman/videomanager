@@ -4,7 +4,6 @@ const fs = require('fs');
 const crypto = require('crypto');
 const archiver = require('archiver');
 const extract = require('extract-zip');
-const usbMuxService = require('./usbmux-service');
 const httpServer = require('./http-server');
 const { exec } = require('child_process');
 
@@ -164,66 +163,6 @@ ipcMain.handle('save-image', async (event, imageData, fileName) => {
     return { 
       success: false, 
       message: '保存图片失败: ' + error.message 
-    };
-  }
-});
-
-// 批量保存图片数据到应用缓存目录
-ipcMain.handle('save-images', async (event, imagesData) => {
-  try {
-    const imagesDir = getImagesDir();
-    const results = [];
-
-    for (const { imageData, fileName } of imagesData) {
-      try {
-        // 从 data URL 提取数据
-        const matches = imageData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (!matches || matches.length !== 3) {
-          results.push({ success: false, message: '无效的图片数据格式' });
-          continue;
-        }
-        
-        const type = matches[1];
-        const buffer = Buffer.from(matches[2], 'base64');
-        
-        // 生成文件名（如果没有提供）
-        let targetFileName = fileName;
-        if (!targetFileName) {
-          const hash = crypto.createHash('md5').update(buffer).digest('hex');
-          const extension = type.split('/')[1] || 'png';
-          targetFileName = `${hash}.${extension}`;
-        }
-        
-        // 确保文件名有正确的扩展名
-        if (!targetFileName.includes('.')) {
-          const extension = type.split('/')[1] || 'png';
-          targetFileName = `${targetFileName}.${extension}`;
-        }
-        
-        const filePath = path.join(imagesDir, targetFileName);
-        fs.writeFileSync(filePath, buffer);
-        
-        results.push({ 
-          success: true, 
-          path: filePath 
-        });
-      } catch (error) {
-        results.push({ 
-          success: false, 
-          message: '保存图片失败: ' + error.message 
-        });
-      }
-    }
-    
-    return { 
-      success: true, 
-      results 
-    };
-  } catch (error) {
-    console.error('批量保存图片失败:', error);
-    return { 
-      success: false, 
-      message: '批量保存图片失败: ' + error.message 
     };
   }
 });
@@ -401,46 +340,6 @@ ipcMain.handle('show-file-in-folder', async (event, filePath) => {
   }
 });
 
-// 添加 USB 和 HTTP 服务相关的 IPC 处理函数
-
-// 检查 iproxy 是否已安装
-ipcMain.handle('check-iproxy-installation', async () => {
-  const isInstalled = await usbMuxService.checkIproxyInstallation();
-  return { success: true, isInstalled };
-});
-
-// 检查 iPhone 连接状态
-ipcMain.handle('check-iphone-connection', async () => {
-  const isConnected = await usbMuxService.checkIPhoneConnection();
-  return { success: true, isConnected };
-});
-
-// 启动 USB 端口转发
-ipcMain.handle('start-usb-forwarding', async () => {
-  return await usbMuxService.startIproxy();
-});
-
-// 停止 USB 端口转发
-ipcMain.handle('stop-usb-forwarding', async () => {
-  return usbMuxService.stopIproxy();
-});
-
-// 获取 USB 服务状态
-ipcMain.handle('get-usb-service-status', () => {
-  return { success: true, status: usbMuxService.getStatus() };
-});
-
-// 配置 USB 端口转发
-ipcMain.handle('configure-usb-forwarding', async (event, options) => {
-  const hostPort = options?.hostPort || 3000;
-  const devicePort = options?.devicePort || 3000;
-  
-  console.log(`[USB] 配置端口转发: 设备端口 ${devicePort} -> 主机端口 ${hostPort}`);
-  
-  // 配置 usbMuxService 使用相应的端口
-  return usbMuxService.configurePorts(hostPort, devicePort);
-});
-
 // 配置 HTTP 服务器
 ipcMain.handle('configure-http-server', async (event, options) => {
   return httpServer.configure(options);
@@ -454,155 +353,6 @@ ipcMain.handle('start-http-server', async () => {
 // 停止 HTTP 服务器
 ipcMain.handle('stop-http-server', async () => {
   return await httpServer.stop();
-});
-
-// 获取 HTTP 服务器信息
-ipcMain.handle('get-http-server-info', () => {
-  return { success: true, info: httpServer.getInfo() };
-});
-
-// 添加诊断工具
-ipcMain.handle('diagnose-connection', async () => {
-  try {
-    console.log('[诊断] 开始检查连接问题...');
-    
-    // 1. 检查 iproxy 是否安装
-    const checkIproxy = await new Promise((resolve) => {
-      exec('which iproxy', (error, stdout) => {
-        if (error) {
-          console.log('[诊断] iproxy 未安装');
-          resolve({ success: false, message: 'iproxy 未安装，请运行 brew install usbmuxd' });
-        } else {
-          console.log('[诊断] iproxy 已安装: ' + stdout.trim());
-          resolve({ success: true, path: stdout.trim() });
-        }
-      });
-    });
-
-    if (!checkIproxy.success) {
-      return { success: false, steps: [checkIproxy] };
-    }
-
-    // 2. 检查 iPhone 连接
-    const checkIPhone = await new Promise((resolve) => {
-      exec('idevice_id -l', (error, stdout) => {
-        if (error || !stdout.trim()) {
-          console.log('[诊断] 未检测到 iPhone 设备');
-          resolve({ success: false, message: '未检测到 iPhone 设备' });
-        } else {
-          console.log('[诊断] 检测到设备: ' + stdout.trim());
-          resolve({ success: true, devices: stdout.trim().split('\n') });
-        }
-      });
-    });
-
-    if (!checkIPhone.success) {
-      return { success: false, steps: [checkIproxy, checkIPhone] };
-    }
-
-    // 3. 检查 iproxy 进程
-    const checkIproxyProcess = await new Promise((resolve) => {
-      exec('ps aux | grep iproxy | grep -v grep', (error, stdout) => {
-        if (error || !stdout.trim()) {
-          console.log('[诊断] 未检测到 iproxy 进程运行');
-          resolve({ success: false, message: 'iproxy 进程未运行' });
-        } else {
-          console.log('[诊断] iproxy 进程: \n' + stdout.trim());
-          resolve({ success: true, processes: stdout.trim() });
-        }
-      });
-    });
-
-    // 4. 检查 HTTP 服务器端口
-    const checkHttpPort = await new Promise((resolve) => {
-      exec('lsof -i :' + httpServer._port, (error, stdout) => {
-        if (error || !stdout.trim()) {
-          console.log('[诊断] 端口 ' + httpServer._port + ' 没有被监听');
-          resolve({ success: false, message: 'HTTP 服务器端口未被监听' });
-        } else {
-          console.log('[诊断] 端口 ' + httpServer._port + ' 正在被监听: \n' + stdout.trim());
-          
-          // 检查是否有多个进程监听同一端口
-          const processes = stdout.trim().split('\n');
-          const listeningProcesses = processes.filter(line => line.includes('LISTEN'));
-          
-          if (listeningProcesses.length > 1) {
-            console.log('[诊断] 检测到端口冲突！多个进程监听同一端口: ' + httpServer._port);
-            resolve({ 
-              success: false, 
-              message: '检测到端口冲突！多个进程监听同一端口: ' + httpServer._port,
-              portInfo: stdout.trim(),
-              conflicting: true
-            });
-          } else {
-            resolve({ success: true, portInfo: stdout.trim() });
-          }
-        }
-      });
-    });
-
-    // 5. 尝试在本地访问 HTTP 服务
-    const checkHttpService = await new Promise((resolve) => {
-      const req = require('http').request({
-        host: 'localhost',
-        port: httpServer._port,
-        path: '/status',
-        method: 'GET'
-      }, (res) => {
-        let data = '';
-        res.on('data', (chunk) => { data += chunk; });
-        res.on('end', () => {
-          console.log('[诊断] HTTP 服务响应: ' + data);
-          try {
-            const response = JSON.parse(data);
-            resolve({ success: true, response });
-          } catch (e) {
-            resolve({ success: true, response: data });
-          }
-        });
-      });
-      
-      req.on('error', (error) => {
-        console.log('[诊断] 本地 HTTP 请求失败: ' + error.message);
-        resolve({ success: false, message: '无法连接到 HTTP 服务: ' + error.message });
-      });
-      
-      req.end();
-    });
-
-    // 6. 检查 usbmuxd 守护进程
-    const checkUsbmuxd = await new Promise((resolve) => {
-      exec('ps aux | grep usbmuxd | grep -v grep', (error, stdout) => {
-        if (error || !stdout.trim()) {
-          console.log('[诊断] 未检测到 usbmuxd 进程运行');
-          resolve({ success: false, message: 'usbmuxd 进程未运行' });
-        } else {
-          console.log('[诊断] usbmuxd 进程: \n' + stdout.trim());
-          resolve({ success: true, processes: stdout.trim() });
-        }
-      });
-    });
-
-    // 收集诊断结果
-    const diagnostics = {
-      success: checkIproxy.success && checkIPhone.success && checkHttpService.success,
-      steps: [
-        { name: 'iproxy_installation', ...checkIproxy },
-        { name: 'iphone_connection', ...checkIPhone },
-        { name: 'iproxy_process', ...checkIproxyProcess },
-        { name: 'http_port', ...checkHttpPort },
-        { name: 'http_service', ...checkHttpService },
-        { name: 'usbmuxd_process', ...checkUsbmuxd }
-      ],
-      timestamp: new Date().toISOString()
-    };
-
-    console.log('[诊断] 完成，结果:', JSON.stringify(diagnostics, null, 2));
-    return diagnostics;
-  } catch (error) {
-    console.error('[诊断] 发生错误:', error);
-    return { success: false, error: error.message };
-  }
 });
 
 // 添加命令执行功能，用于调试
@@ -626,18 +376,8 @@ ipcMain.handle('execute-command', async (event, command) => {
   }
 });
 
-// 直接使用指定参数启动 iproxy（用于手动调试）
-ipcMain.handle('start-iproxy-with-params', async (event, devicePort, hostPort) => {
-  console.log(`[IPC] 请求直接启动 iproxy，参数: ${devicePort} ${hostPort}`);
-  return await usbMuxService.startIproxyWithParams(
-    parseInt(devicePort) || 3000, 
-    parseInt(hostPort) || 3000
-  );
-});
-
 // 在应用关闭时清理资源
 app.on('will-quit', () => {
-  usbMuxService.cleanup();
   httpServer.stop();
 });
 

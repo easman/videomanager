@@ -369,6 +369,11 @@ const SkuTable: React.FC<SkuTableProps> = ({ dataSource, onDataChange, onEdit })
       rowKey="id" 
       columns={columns} 
       dataSource={filteredData}
+      pagination={{
+        showTotal: total => `共 ${total} 条`,
+        showSizeChanger: true,
+        showQuickJumper: true
+      }}
       rowSelection={batchMode ? rowSelection : undefined}
       onRow={(record) => ({
         style: { cursor: 'default' }
