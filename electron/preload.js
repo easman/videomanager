@@ -21,7 +21,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
   configureHttpServer: (options) => ipcRenderer.invoke('configure-http-server', options),
   startHttpServer: () => ipcRenderer.invoke('start-http-server'),
   stopHttpServer: () => ipcRenderer.invoke('stop-http-server'),
-  
-  // 命令执行
-  executeCommand: (command) => ipcRenderer.invoke('execute-command', command),
 }); 

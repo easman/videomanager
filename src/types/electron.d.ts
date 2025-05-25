@@ -23,15 +23,6 @@ interface ElectronAPI {
     uploadDir?: string;
   }>;
   stopHttpServer: () => Promise<{ success: boolean; message?: string }>;
-  
-  // 命令执行
-  executeCommand: (command: string) => Promise<{
-    success: boolean;
-    stdout?: string;
-    stderr?: string;
-    error?: string;
-    command: string;
-  }>;
 }
 
 declare interface Window {

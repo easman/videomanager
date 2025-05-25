@@ -20,26 +20,6 @@ const SettingsPage: React.FC = () => {
     stopHttp: false,
   });
   
-  // 获取本机 IP 地址
-  const [localIpAddresses, setLocalIpAddresses] = useState<string[]>([]);
-
-  // 在组件加载时获取本机 IP 地址
-  useEffect(() => {
-    const getLocalIpAddresses = async () => {
-      try {
-        const result = await window.electronAPI.executeCommand('ifconfig | grep inet | grep -v 127.0.0.1 | grep -v inet6 | awk \'{print $2}\'');
-        if (result.success && result.stdout) {
-          const addresses = result.stdout.trim().split('\n').filter(Boolean);
-          setLocalIpAddresses(addresses);
-        }
-      } catch (error) {
-        console.error('获取 IP 地址失败:', error);
-      }
-    };
-
-    getLocalIpAddresses();
-  }, []);
-
   // 获取开发者工具状态
   useEffect(() => {
     const checkDevTools = async () => {
